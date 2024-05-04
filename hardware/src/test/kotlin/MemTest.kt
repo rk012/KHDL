@@ -7,15 +7,14 @@ import kotlin.test.Test
 class MemTest {
     @Test
     fun register() {
-        val reg = Register(1)
+        val clk = Clock()
+
+        val reg = Register(clk, 1)
 
         val src = BusSource(2)
 
         reg.d bind src.outputBus.subList(0, 1)
         reg.w bind src.outputBus[1]
-
-        val clk = Clock()
-        clk.addChip(reg)
 
         TestBus(reg.out).testLines(
             listOf(
@@ -60,14 +59,12 @@ class MemTest {
 
     @Test
     fun ram() {
-        val ram = Ram(3, 2)
+        val clk = Clock()
+        val ram = Ram(clk, 3, 2)
 
         val src = BusSource(6)
 
         ram.input + ram.addr + listOf(ram.w) bind src.outputBus
-
-        val clk = Clock()
-        clk.addChip(ram)
 
         TestBus(ram.out).testLines(
             listOf(

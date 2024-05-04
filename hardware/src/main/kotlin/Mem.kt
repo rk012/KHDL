@@ -1,11 +1,11 @@
 import hdl.*
 
-class Register(size: Int) : StatefulChip() {
+class Register(clk: Clock, size: Int) {
     init {
         require(size > 0)
     }
 
-    private val dff = List(size) { DFF().register() }
+    private val dff = List(size) { DFF(clk) }
 
     private val mux = List(size) { Mux(1) }
 
@@ -22,16 +22,16 @@ class Register(size: Int) : StatefulChip() {
     val out: OutputBus = dff.map { it.out }
 }
 
-class Ram(addrSize: Int, wordSize: Int) : StatefulChip() {
+class Ram(clk: Clock, addrSize: Int, wordSize: Int) {
     init {
         require(addrSize > 0 && wordSize > 0)
     }
 
-    private val ramA = if (addrSize == 1) null else Ram(addrSize-1, wordSize).register()
-    private val ramB = if (addrSize == 1) null else Ram(addrSize-1, wordSize).register()
+    private val ramA = if (addrSize == 1) null else Ram(clk, addrSize-1, wordSize)
+    private val ramB = if (addrSize == 1) null else Ram(clk, addrSize-1, wordSize)
 
-    private val regA = if (addrSize > 1) null else Register(wordSize).register()
-    private val regB = if (addrSize > 1) null else Register(wordSize).register()
+    private val regA = if (addrSize > 1) null else Register(clk, wordSize)
+    private val regB = if (addrSize > 1) null else Register(clk, wordSize)
 
     private val dMux = DMux(1)
     private val mux = List(wordSize) { Mux(1) }

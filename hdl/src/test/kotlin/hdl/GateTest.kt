@@ -25,9 +25,7 @@ class GateTest {
     @Test
     fun dffTest() {
         val clk = Clock()
-        val dff = DFF()
-
-        clk.addChip(dff)
+        val dff = DFF(clk)
 
         val src = PinSource()
         dff.d bind src

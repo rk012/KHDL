@@ -30,12 +30,7 @@ class Nand {
     }
 }
 
-interface ClockedChip {
-    fun tick(nonce: Int? = null)
-    fun tock(nonce: Int? = null)
-}
-
-class DFF : ClockedChip {
+class DFF(clk: Clock) {
     private val _in = PinImpl()
 
     val d: InputPin = _in
@@ -49,26 +44,15 @@ class DFF : ClockedChip {
         }
     }
 
-    override fun tick(nonce: Int?) {
+    init {
+        clk.addChip(this)
+    }
+
+    internal fun tick(nonce: Int?) {
         x = _in.peek(nonce)
     }
 
-    override fun tock(nonce: Int?) {
+    internal fun tock() {
         y = x
-    }
-
-}
-
-abstract class StatefulChip : ClockedChip {
-    private val subchips = mutableListOf<ClockedChip>()
-
-    protected fun <T : ClockedChip> T.register() = this@register.also { subchips.add(it) }
-
-    override fun tick(nonce: Int?) {
-        subchips.forEach { it.tick(nonce) }
-    }
-
-    override fun tock(nonce: Int?) {
-        subchips.forEach { it.tock(nonce) }
     }
 }
