@@ -10,18 +10,12 @@ class GateTest {
         val src = BusSource(2)
         listOf(nand.a, nand.b) bind src.outputBus
 
-        TestBus(listOf(nand.out)).test(
+        TestBus(listOf(nand.out)).testLines(
             listOf(
-                0b00,
-                0b01,
-                0b10,
-                0b11
-            ),
-            listOf(
-                0b1,
-                0b1,
-                0b1,
-                0b0
+                0b00__1,
+                0b01__1,
+                0b10__1,
+                0b11__0
             ),
             Clock(),
             src

@@ -23,18 +23,12 @@ class LogicGateTest {
         listOf(xor.a, xor.b) bind src.outputBus
         listOf(xnor.a, xnor.b) bind src.outputBus
 
-        TestBus(listOf(not.out, or.out, and.out, nor.out, xor.out, xnor.out)).test(
+        TestBus(listOf(not.out, or.out, and.out, nor.out, xor.out, xnor.out)).testLines(
             listOf(
-                0b00,
-                0b01,
-                0b10,
-                0b11
-            ),
-            listOf(
-                0b100101,
-                0b110010,
-                0b010010,
-                0b011001
+                0b00__100101,
+                0b01__110010,
+                0b10__010010,
+                0b11__011001
             ),
             Clock(),
             src

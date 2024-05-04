@@ -7,20 +7,13 @@ class BusTest {
     fun busTest() {
         val src = BusSource(4)
 
-        TestBus(src.outputBus).test(
+        TestBus(src.outputBus).testLines(
             listOf(
-                0b0000,
-                0b1111,
-                0b0101,
-                0b0110,
-                0b1001
-            ),
-            listOf(
-                0b0000,
-                0b1111,
-                0b0101,
-                0b0110,
-                0b1001
+                0b0000__0000,
+                0b1111__1111,
+                0b0101__0101,
+                0b0110__0110,
+                0b1001__1001
             ),
             Clock(),
             src

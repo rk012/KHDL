@@ -15,26 +15,16 @@ class MuxTest {
         mux.inputs[1] bind src.outputBus[1]
         mux.addr[0] bind src.outputBus[2]
 
-        TestBus(listOf(mux.out)).test(
+        TestBus(listOf(mux.out)).testLines(
             listOf(
-                0b000,
-                0b001,
-                0b010,
-                0b011,
-                0b100,
-                0b101,
-                0b110,
-                0b111
-            ),
-            listOf(
-                0b0,
-                0b0,
-                0b0,
-                0b1,
-                0b1,
-                0b0,
-                0b1,
-                0b1
+                0b000__0,
+                0b001__0,
+                0b010__0,
+                0b011__1,
+                0b100__1,
+                0b101__0,
+                0b110__1,
+                0b111__1
             ),
             Clock(),
             src
@@ -50,18 +40,12 @@ class MuxTest {
         mux.inputs bind src.outputBus.subList(0, 8)
         mux.addr bind src.outputBus.subList(8, 11)
 
-        TestBus(listOf(mux.out)).test(
+        TestBus(listOf(mux.out)).testLines(
             listOf(
-                0b10101010_1101,
-                0b10101010_1010,
-                0b10101010_0101,
-                0b10101010_0010,
-            ),
-            listOf(
-                0b1,
-                0b0,
-                0b1,
-                0b0
+                0b10101010_1101__1,
+                0b10101010_1010__0,
+                0b10101010_0101__1,
+                0b10101010_0010__0,
             ),
             Clock(),
             src
@@ -77,18 +61,12 @@ class MuxTest {
         dMux.input bind src.outputBus[0]
         dMux.addr[0] bind src.outputBus[1]
 
-        TestBus(dMux.out).test(
+        TestBus(dMux.out).testLines(
             listOf(
-                0b00,
-                0b01,
-                0b10,
-                0b11
-            ),
-            listOf(
-                0b00,
-                0b00,
-                0b10,
-                0b01
+                0b00__00,
+                0b01__00,
+                0b10__10,
+                0b11__01
             ),
             Clock(),
             src
@@ -104,42 +82,24 @@ class MuxTest {
         dMux.input bind src.outputBus[0]
         dMux.addr bind src.outputBus.subList(1, 4)
 
-        TestBus(dMux.out).test(
+        TestBus(dMux.out).testLines(
             listOf(
-                0b0000,
-                0b0001,
-                0b0010,
-                0b0011,
-                0b0100,
-                0b0101,
-                0b0110,
-                0b0111,
-                0b1000,
-                0b1001,
-                0b1010,
-                0b1011,
-                0b1100,
-                0b1101,
-                0b1110,
-                0b1111
-            ),
-            listOf(
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b10000000,
-                0b01000000,
-                0b00100000,
-                0b00010000,
-                0b00001000,
-                0b00000100,
-                0b00000010,
-                0b00000001
+                0b0000__00000000,
+                0b0001__00000000,
+                0b0010__00000000,
+                0b0011__00000000,
+                0b0100__00000000,
+                0b0101__00000000,
+                0b0110__00000000,
+                0b0111__00000000,
+                0b1000__10000000,
+                0b1001__01000000,
+                0b1010__00100000,
+                0b1011__00010000,
+                0b1100__00001000,
+                0b1101__00000100,
+                0b1110__00000010,
+                0b1111__00000001
             ),
             Clock(),
             src

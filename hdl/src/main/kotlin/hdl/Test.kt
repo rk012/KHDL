@@ -45,4 +45,15 @@ class TestBus(private val src: OutputBus) {
             clk.pulse()
         }
     }
+
+    fun testLines(
+        inputs: List<Int>,
+        clk: Clock,
+        src: BusSource
+    ) = test(
+        inputs.map { it shr this.src.size },
+        inputs.map { it and ((1 shl this.src.size) - 1)},
+        clk,
+        src
+    )
 }
