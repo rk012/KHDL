@@ -30,11 +30,16 @@ class TestBus(private val src: OutputBus) {
     ) {
         require(inputs.size == expected.size)
 
-        (inputs zip expected).forEach { (input, expect) ->
+        (inputs zip expected).forEachIndexed { i, (input, expect) ->
             src.setN(input)
 
             require(expect == null || peekInt(clk.nonce) == expect) {
-                "Expected ${expect!!.toString(2)}, got ${peekInt(clk.nonce).toString(2)}"
+                """
+                    |Expected ${expect!!.toString(2)}
+                    |Output: ${peekInt(clk.nonce).toString(2)}
+                    |Input: ${input.toString(2)}
+                    |Index: $i
+                """.trimMargin()
             }
 
             clk.pulse()
