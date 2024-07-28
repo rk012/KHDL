@@ -1,3 +1,5 @@
+package hardware
+
 import hdl.*
 
 class Register(clk: Clock, size: Int) {

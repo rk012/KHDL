@@ -1,3 +1,5 @@
+package hardware
+
 import hdl.BusSource
 import hdl.Clock
 import hdl.TestBus

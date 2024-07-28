@@ -1,3 +1,5 @@
+package hardware
+
 import hdl.Nand
 import hdl.multiInputPins
 
