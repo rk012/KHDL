@@ -2,5 +2,5 @@
 rootProject.name = "KHDL"
 
 
-include(":hdl", ":hardware")
+include(":hdl", ":hardware", ":cpu")
 

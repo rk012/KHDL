@@ -1,4 +1,4 @@
 dependencies {
-    implementation(project(":hdl"))
+    api(project(":hdl"))
 }
 
