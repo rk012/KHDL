@@ -190,60 +190,49 @@ class ALU(wordSize: Int) {
 
     private val xors = List(wordSize) { Xor() }
 
-    private val shiftMux = List(wordSize - 1) { Mux(1) }
+    private val shift = BusSwitch(wordSize - 1)
 
-    private val selectMux0 = List(wordSize) { Mux(1) }
+    private val select0 = BusSwitch(wordSize)
     private val nand = Nand()
 
-    private val selectMux1 = List(wordSize) { Mux(1) }
+    private val select1 = BusSwitch(wordSize)
 
     private val and = And()
     private val or = Or()
 
-//    private val zero: OutputPin = PinSource(false)
-
     init {
-        shiftMux.forEach { it.addr[0] bind controlBits.c0 }
+        shift.select bind controlBits.c0
 
-        (xors zip selectMux0).forEach { (xor, mux) ->
-            xor.out bind mux.inputs[0]
-        }
-
-        ((listOf(shiftMux[0].out) + shiftMux.map { it.out }) zip selectMux0).forEach { (out, mux) ->
-            out bind mux.inputs[1]
-        }
+        select0.a bind xors.map(Xor::out)
+        select0.b bind (listOf(shift.out[0]) + shift.out)
 
         nand.a bind controlBits.c0
         nand.b bind controlBits.c1
 
-        selectMux0.forEach { it.addr[0] bind nand.out }
+        select0.select bind nand.out
 
-        (mainUnit.out zip selectMux1).forEach { (out, mux) ->
-            out bind mux.inputs[0]
-        }
+        select1.a bind mainUnit.out
 
-        (selectMux0 zip selectMux1).forEach { (m0, m1) ->
-            m0.out bind m1.inputs[1]
-        }
+        select1.b bind select0.out
 
         controlBits.c0 bind or.a
         controlBits.c1 bind or.b
         or.out bind and.a
         controlBits.c2 bind and.b
 
-        selectMux1.forEach { it.addr[0] bind and.out }
+        select1.select bind and.out
 
-        isZero.inputs bind selectMux1.map { it.out }
+        isZero.inputs bind select1.out
     }
 
     val a: InputBus = List(wordSize) { i ->
         if (i+1 == wordSize) multiInputPins(mainUnit.a[i], xors[i].a)
-        else multiInputPins(mainUnit.a[i], xors[i].a, shiftMux[i].inputs[0])
+        else multiInputPins(mainUnit.a[i], xors[i].a, shift.a[i])
     }
 
     val b: InputBus = List(wordSize) { i ->
         if (i+1 == wordSize) multiInputPins(mainUnit.b[i], xors[i].b)
-        else multiInputPins(mainUnit.b[i], xors[i].b, shiftMux[i].inputs[1])
+        else multiInputPins(mainUnit.b[i], xors[i].b, shift.b[i])
     }
 
     val za = multiInputPins(mainUnit.za, controlBits.za)
@@ -253,8 +242,8 @@ class ALU(wordSize: Int) {
     val f = multiInputPins(mainUnit.f, controlBits.f)
     val no = multiInputPins(mainUnit.no, controlBits.no)
 
-    val out: OutputBus = selectMux1.map { it.out }
+    val out: OutputBus = select1.out
 
-    val neg = selectMux1[0].out
+    val neg = select1.out[0]
     val zero = isZero.out
 }
