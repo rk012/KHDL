@@ -1,4 +1,4 @@
-package cpu
+package processor
 
 import hdl.BusSource
 import hdl.Clock

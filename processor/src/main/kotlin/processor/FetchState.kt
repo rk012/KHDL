@@ -1,4 +1,4 @@
-package cpu
+package processor
 
 import hardware.And
 import hardware.Not
