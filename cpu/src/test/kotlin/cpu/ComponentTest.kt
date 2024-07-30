@@ -6,7 +6,7 @@ import hdl.TestBus
 import hdl.bind
 import kotlin.test.Test
 
-class ProgramCounterTest {
+class ComponentTest {
     @Test
     fun programCounter() {
         val clk = Clock()
@@ -29,6 +29,28 @@ class ProgramCounterTest {
                 0b1001_0_1__0000,
             ),
             clk, src
+        )
+    }
+
+    @Test
+    fun fetchState() {
+        val clk = Clock()
+        val chip = FetchState(clk)
+        val src = BusSource(1)
+        chip.enable bind src.outputBus[0]
+
+        TestBus(listOf(chip.isFetch)).testLines(
+            listOf(
+                0b0_0,
+                0b1_1,
+                0b1_0,
+                0b1_1,
+                0b0_0,
+                0b1_1,
+                0b1_0,
+                0b0_0,
+                0b1_1
+            ), clk, src
         )
     }
 }

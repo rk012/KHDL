@@ -23,6 +23,23 @@ class GateTest {
     }
 
     @Test
+    fun headerTest() {
+        val header = PinHeader(2)
+
+        val src = BusSource(2)
+        header.input bind src.outputBus
+
+        TestBus(header.output).testLines(
+            listOf(
+                0b00__00,
+                0b01__01,
+                0b10__10,
+                0b11__11
+            ), Clock(), src
+        )
+    }
+
+    @Test
     fun dffTest() {
         val clk = Clock()
         val dff = DFF(clk)

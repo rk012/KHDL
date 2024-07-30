@@ -16,6 +16,18 @@ fun multiInputBus(vararg busses: InputBus): InputBus {
     }
 }
 
+class PinHeader(size: Int) {
+    init {
+        require(size > 0)
+    }
+
+    private val pins = List(size) { PinImpl() }
+
+    val input: InputBus = pins
+    val output: OutputBus = pins
+}
+
+
 class Nand {
     private val _a = PinImpl()
     private val _b = PinImpl()
