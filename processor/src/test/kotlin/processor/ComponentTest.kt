@@ -1,10 +1,9 @@
 package processor
 
-import hdl.BusSource
-import hdl.Clock
-import hdl.TestBus
-import hdl.bind
+import common.*
+import hdl.*
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class ComponentTest {
     @Test
@@ -75,5 +74,85 @@ class ComponentTest {
             ),
             clk, src
         )
+    }
+
+    private val OutputBus.n get() = TestBus(this).peekInt()
+
+    private fun testInstruction(
+        instruction: Instruction, src: BusSource,
+        opFlags: OutputBus, ab: OutputPin, cond: OutputBus,
+        xReg: OutputBus, regA: OutputBus, regB: OutputBus,
+        aluOp: OutputBus, iVal: OutputBus
+    ) {
+        src.setN(instruction.code)
+
+        when (instruction) {
+            Instruction.HLT -> assertEquals(0b10000000, opFlags.n)
+            Instruction.NOP -> assertEquals(0b01000000, opFlags.n)
+            is Instruction.MOV -> {
+                assertEquals(0b00100000, opFlags.n)
+                assertEquals(instruction.src.xCode, xReg.n)
+                assertEquals(instruction.dest.code, regB.n)
+            }
+            is Instruction.SET -> {
+                assertEquals(0b00010000, opFlags.n)
+                assertEquals(instruction.sideFlag, ab.peek())
+                assertEquals(instruction.dest.code, regA.n)
+                assertEquals(instruction.value, iVal.n)
+            }
+            is Instruction.JMP -> {
+                assertEquals(0b00001000, opFlags.n)
+                assertEquals(instruction.cond, JumpCondition(cond.n))
+                assertEquals(instruction.addr.code, regB.n)
+            }
+            is Instruction.ALU -> {
+                assertEquals(0b00000100, opFlags.n)
+                assertEquals(instruction.q, ab.peek())
+                assertEquals(instruction.a.code, regA.n)
+                assertEquals(instruction.b.code, regB.n)
+                assertEquals(instruction.op.opcode, aluOp.n)
+            }
+            is Instruction.MEM -> {
+                assertEquals(0b00000010, opFlags.n)
+                assertEquals(instruction.w, ab.peek())
+                assertEquals(instruction.addr.code, regA.n)
+                assertEquals(instruction.d.code, regB.n)
+            }
+            is Instruction.IO -> {
+                assertEquals(0b00000001, opFlags.n)
+                assertEquals(instruction.w, ab.peek())
+                assertEquals(instruction.addr.code, regA.n)
+                assertEquals(instruction.d.code, regB.n)
+            }
+        }
+    }
+
+    @Test
+    fun instructionDecoder() {
+        val instructions = listOf(
+            Instruction.NOP,
+            Instruction.HLT,
+            Instruction.MOV(ReadOnlyRegister.IP, WritableRegister.A),
+            Instruction.MOV(WritableRegister.B, WritableRegister.C),
+            Instruction.SET(true, WritableRegister.B,254),
+            Instruction.JMP(JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
+            Instruction.ALU(false, WritableRegister.D, WritableRegister.Q, AluOperation.OR),
+            Instruction.MEM(true, WritableRegister.SP, WritableRegister.P),
+            Instruction.IO(true, WritableRegister.A, WritableRegister.B)
+        )
+
+        val chip = InstructionDecoder()
+        val src = BusSource(16)
+        chip.instruction bind src.outputBus
+
+        instructions.forEach {
+            testInstruction(
+                it, src,
+                opFlags = listOf(chip.hlt, chip.nop, chip.mov, chip.set, chip.jmp, chip.alu, chip.mem, chip.io),
+                ab=chip.ab, cond=chip.cond,
+                xReg=chip.xReg, regA=chip.regA, regB=chip.regB,
+                aluOp=chip.aluOp, iVal=chip.iVal
+            )
+        }
     }
 }
