@@ -53,4 +53,27 @@ class ComponentTest {
             ), clk, src
         )
     }
+
+    @Test
+    fun cpuRegisters() {
+        val clk = Clock()
+        val chip = CpuRegisters(clk)
+        val src = BusSource(14)
+        (chip.d.subList(0, 4) + chip.wAddr + chip.w + chip.addrA + chip.addrB) bind src.outputBus
+        chip.d.subList(4, 16) bind BusSource(12).apply { value = List(12) { false } }.outputBus
+
+        TestBus(chip.a.subList(0, 4) + chip.b.subList(0, 4)).testLines(
+            listOf(
+                //   d  wa w   a   b     a    b
+                0b1010_000_0_000_000__0000_0000,
+                0b1010_000_1_000_000__0000_0000,
+                0b1111_001_1_000_000__1010_1010,
+                0b0101_110_1_001_000__1111_1010,
+                0b0000_000_0_000_110__1010_0101,
+                0b0001_110_1_000_110__1010_0101,
+                0b0001_110_0_000_110__1010_0001,
+            ),
+            clk, src
+        )
+    }
 }
