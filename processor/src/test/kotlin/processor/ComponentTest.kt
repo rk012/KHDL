@@ -76,6 +76,20 @@ class ComponentTest {
         )
     }
 
+    @Test
+    fun jmpCmp() {
+        val chip = JmpCmp(4)
+
+        val src = BusSource(7)
+        (chip.input + listOf(chip.eq, chip.lt, chip.gt)) bind src.outputBus
+
+        (0..7).map { JumpCondition(it) }.flatMap { jc ->
+        (-8..7).map { n ->
+            src.setN(jc.code or (n shl 3))
+            assertEquals(jc.shouldJump(n), chip.output.peek())
+        } }
+    }
+
     private val OutputBus.n get() = TestBus(this).peekInt()
 
     private fun testInstruction(
