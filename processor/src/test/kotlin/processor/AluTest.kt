@@ -37,13 +37,16 @@ class AluTest {
     private fun testInstruction(instruction: AluOperation, testBus: TestBus, src: BusSource, flags: Boolean) {
         val inputs = aluTestNums.map { (a, b) -> (instruction.opcode shl 8) or (a.trim4() shl 4) or b.trim4() }
         val expects = aluTestNums.map { (a, b) ->
-            var n = instruction.computation(a, b).trim4()
-            val isNeg = n >= 0b1000
+            val res = instruction.computation(a, b)
+            val overflow = (instruction.opcode and 0b000010) != 0 && res !in (-8..7)
+            var n = (res.trim4() shl 1) or if (overflow) 1 else 0
+            val isNeg = n >= 0b10000
+            val isZero = (n shr 1) == 0
             if (!flags) return@map n
 
             n = n shl 2
 
-            if (n == 0) n = 0b01
+            if (isZero) n = n or 0b01
             if (isNeg) n = n or 0b10
 
             n
@@ -54,7 +57,7 @@ class AluTest {
         }.onFailure {
             if (it !is IllegalArgumentException) throw it
 
-            throw IllegalArgumentException(it.message + "\nInstruction: $instruction")
+            throw IllegalArgumentException(it.message + "\nInstruction: $instruction").apply { stackTrace = it.stackTrace }
         }
     }
 
@@ -64,7 +67,7 @@ class AluTest {
         val unit = ALU.MainUnit(4)
         val src = BusSource(6+4+4)
         (listOf(unit.za, unit.na, unit.zb, unit.nb, unit.f, unit.no) + unit.a + unit.b) bind src.outputBus
-        val testBus = TestBus(unit.out)
+        val testBus = TestBus(unit.out + listOf(unit.overflow))
 
         AluOperation.entries.filter { it !in altInstructions }.forEach {
             testInstruction(it, testBus, src, false)
@@ -77,7 +80,7 @@ class AluTest {
         val alu = ALU(4)
         val src = BusSource(6+4+4)
         (listOf(alu.za, alu.na, alu.zb, alu.nb, alu.f, alu.no) + alu.a + alu.b) bind src.outputBus
-        val testBus = TestBus(alu.out + listOf(alu.neg, alu.zero))
+        val testBus = TestBus(alu.out + listOf(alu.overflow, alu.neg, alu.zero))
 
         AluOperation.entries.forEach { testInstruction(it, testBus, src, true) }
     }

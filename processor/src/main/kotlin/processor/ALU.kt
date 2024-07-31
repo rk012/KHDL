@@ -78,6 +78,10 @@ class ALU(wordSize: Int) {
         private val halfAdder = HalfAdder()
         private val fullAdders = List(wordSize - 1) { FullAdder() }
 
+        private val overflowAdder = FullAdder()
+        private val overflowXor = Xor()
+        private val overflowAnd = And()
+
         private val andGates = List(wordSize) { And() }
 
         init {
@@ -107,6 +111,14 @@ class ALU(wordSize: Int) {
             notOut.map(Not::a) bind fMux.map(Mux::out)
             muxON.map { it.inputs[0] } bind fMux.map(Mux::out)
             muxON.map { it.inputs[1] } bind notOut.map(Not::out)
+
+            overflowAdder.carryIn bind fullAdders[0].carryOut
+            overflowAdder.a bind muxAN[0].out
+            overflowAdder.b bind muxBN[0].out
+
+            overflowXor.a bind overflowAdder.out
+            overflowXor.b bind fullAdders[0].out
+            overflowAnd.b bind overflowXor.out
         }
 
         val a: InputBus = andAZ.map { it.b }
@@ -118,10 +130,12 @@ class ALU(wordSize: Int) {
         val zb = multiInputPins(*nzb.map(Not::a).toTypedArray())
         val nb = multiInputPins(*muxBN.map { it.addr[0] }.toTypedArray())
 
-        val f = multiInputPins(*fMux.map { it.addr[0] }.toTypedArray())
+        val f = multiInputPins(*fMux.map { it.addr[0] }.toTypedArray(), overflowAnd.a)
         val no = multiInputPins(*muxON.map { it.addr[0] }.toTypedArray())
 
         val out: OutputBus = muxON.map { it.out }
+
+        val overflow = overflowAnd.out
     }
 
     private val controlBits = ControlBits()
@@ -188,4 +202,5 @@ class ALU(wordSize: Int) {
 
     val neg = select1.out[0]
     val zero = isZero.out
+    val overflow = mainUnit.overflow
 }
