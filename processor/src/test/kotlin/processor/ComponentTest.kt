@@ -105,7 +105,7 @@ class ComponentTest {
         TestBus(listOf(cmp.output)).test(inputs, expects, Clock(), src)
     }
 
-    private val OutputBus.n get() = TestBus(this).peekInt()
+    private val OutputBus.n get() = peekInt()
 
     private fun testInstruction(
         instruction: Instruction, src: BusSource,

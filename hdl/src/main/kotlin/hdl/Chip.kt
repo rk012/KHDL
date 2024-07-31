@@ -42,7 +42,16 @@ class Nand {
     }
 }
 
-class DFF(clk: Clock) {
+@InternalHdlApi
+interface ClockedChip {
+    @InternalHdlApi
+    fun tick(nonce: Int?)
+
+    @InternalHdlApi
+    fun tock()
+}
+
+class DFF(clk: Clock) : ClockedChip {
     private val _in = PinImpl()
 
     val d: InputPin = _in
@@ -60,11 +69,11 @@ class DFF(clk: Clock) {
         clk.addChip(this)
     }
 
-    internal fun tick(nonce: Int?) {
+    override fun tick(nonce: Int?) {
         x = _in.peek(nonce)
     }
 
-    internal fun tock() {
+    override fun tock() {
         y = x
     }
 }

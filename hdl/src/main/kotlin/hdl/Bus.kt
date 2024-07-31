@@ -3,6 +3,9 @@ package hdl
 typealias OutputBus = List<OutputPin>
 typealias InputBus = List<InputPin>
 
+fun OutputBus.peekInt(nonce: Int? = null) =
+    map { it.peek(nonce) }.fold(0) { acc, bit -> (acc shl 1) or if (bit) 1 else 0 }
+
 infix fun InputBus.bind(bus: OutputBus) {
     require(size == bus.size)
 

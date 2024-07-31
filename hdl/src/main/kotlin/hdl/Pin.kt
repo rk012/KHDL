@@ -12,7 +12,8 @@ interface InputPin {
     infix fun bind(pin: OutputPin)
 }
 
-class PinImpl internal constructor(): OutputPin, InputPin {
+@InternalHdlApi
+class PinImpl: OutputPin, InputPin {
     private var inputPin: OutputPin? = null
 
     private var lastNonce: Int? = null

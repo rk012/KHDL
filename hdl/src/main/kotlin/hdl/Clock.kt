@@ -3,12 +3,13 @@ package hdl
 import kotlin.random.Random
 
 class Clock {
-    private val chips = mutableListOf<DFF>()
+    private val chips = mutableListOf<ClockedChip>()
 
     var nonce = Random.nextInt()
         private set
 
-    internal fun addChip(chip: DFF) {
+    @InternalHdlApi
+    fun addChip(chip: ClockedChip) {
         chips.add(chip)
     }
 
