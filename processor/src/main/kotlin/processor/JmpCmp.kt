@@ -1,46 +1,40 @@
 package processor
 
 import hardware.And
-import hardware.IsZero
 import hardware.Nor
 import hardware.Or
-import hdl.PinHeader
-import hdl.bind
+import hardware.Xor
+import hdl.InputBus
+import hdl.multiInputPins
 
-class JmpCmp(wordSize: Int) {
-    private val inputHeader = PinHeader(wordSize)
-    private val iz = IsZero(wordSize)
-
+class JmpCmp {
+    private val xor = Xor()
     private val nor = Nor()
 
-    private val ea = And()
-    private val la = And()
-    private val ga = And()
+    private val andE = And()
+    private val andL = And()
+    private val andG = And()
 
-    private val orA = Or()
-    private val orB = Or()
+    private val orLG = Or()
+    private val orELG = Or()
 
     init {
-        iz.inputs bind inputHeader.output
+        nor.b bind xor.out
 
-        nor.a bind inputHeader.output[0]
-        nor.b bind iz.out
+        andL.b bind xor.out
+        andG.b bind nor.out
 
-        ea.b bind iz.out
-        la.b bind inputHeader.output[0]
-        ga.b bind nor.out
-
-        orA.a bind la.out
-        orA.b bind ga.out
-        orB.a bind ea.out
-        orB.b bind orA.out
+        orLG.a bind andL.out
+        orLG.b bind andG.out
+        orELG.a bind andE.out
+        orELG.b bind orLG.out
     }
 
-    val input = inputHeader.input
+    val eq = multiInputPins(andE.b, nor.a)
+    val neg = xor.a
+    val overflow = xor.b
 
-    val eq = ea.a
-    val lt = la.a
-    val gt = ga.a
+    val cond: InputBus = listOf(andE.a, andL.a, andG.a)
 
-    val output = orB.out
+    val output = orELG.out
 }

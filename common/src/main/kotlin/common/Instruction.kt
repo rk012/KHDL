@@ -25,7 +25,7 @@ sealed class Instruction(opcode: Int, vararg masks: Int) {
                 0b001 -> NOP
                 0b010 -> MOV(getXReg(), getReg(regB))
                 0b011 -> SET(flag, getReg(regA), value)
-                0b100 -> JMP(JumpCondition(cond), getReg(regB))
+                0b100 -> CMP(flag, JumpCondition(cond), getReg(regB))
                 0b101 -> ALU(
                     flag, getReg(regA), getReg(regB),
                     AluOperation.entries.find { it.opcode == aluOp } ?: error("Bad ALU code")
@@ -48,8 +48,8 @@ sealed class Instruction(opcode: Int, vararg masks: Int) {
     data class SET(val sideFlag: Boolean, val dest: WritableRegister, val value: Int) :
         Instruction(0b011, boolMask(sideFlag), dest.code shl 9, value)
 
-    data class JMP(val cond: JumpCondition, val addr: WritableRegister) :
-        Instruction(0b100, cond.mask, addr.code shl 6)
+    data class CMP(val jmp: Boolean, val cond: JumpCondition, val reg: WritableRegister) :
+        Instruction(0b100, boolMask(jmp), cond.mask, reg.code shl 6)
 
     data class ALU(val q: Boolean, val a: WritableRegister, val b: WritableRegister, val op: AluOperation) :
         Instruction(0b101, boolMask(q), a.code shl 9, b.code shl 6, op.mask)

@@ -76,18 +76,33 @@ class ComponentTest {
         )
     }
 
+    private fun Int.trim3() = this and 0b111
+
     @Test
     fun jmpCmp() {
-        val chip = JmpCmp(4)
+        val numPairs = (-4..3).flatMap { a -> (-4..3).map { b -> a to b } }
+        val jmpConds = (0..7).map { JumpCondition(it) }
 
-        val src = BusSource(7)
-        (chip.input + listOf(chip.eq, chip.lt, chip.gt)) bind src.outputBus
+        val alu = ALU(3)
+        val cmp = JmpCmp()
 
-        (0..7).map { JumpCondition(it) }.flatMap { jc ->
-        (-8..7).map { n ->
-            src.setN(jc.code or (n shl 3))
-            assertEquals(jc.shouldJump(n), chip.output.peek())
-        } }
+        val controlPins = listOf(alu.za, alu.na, alu.zb, alu.nb, alu.f, alu.no)
+        controlPins bind BusSource(6).apply { setN(AluOperation.A_MINUS_B.opcode) }.outputBus
+        cmp.eq bind alu.zero
+        cmp.neg bind alu.neg
+        cmp.overflow bind alu.overflow
+
+        val src = BusSource(9)
+        (alu.a + alu.b + cmp.cond) bind src.outputBus
+
+        val expects = numPairs.flatMap { (a, b) -> jmpConds.map { c -> if (c.shouldJump(a-b)) 1 else 0 } }
+        val inputs =
+            numPairs.flatMap { (a, b) ->
+            jmpConds.map { c ->
+                (a.trim3() shl 6) or (b.trim3() shl 3) or c.code
+            } }
+
+        TestBus(listOf(cmp.output)).test(inputs, expects, Clock(), src)
     }
 
     private val OutputBus.n get() = TestBus(this).peekInt()
@@ -114,10 +129,11 @@ class ComponentTest {
                 assertEquals(instruction.dest.code, regA.n)
                 assertEquals(instruction.value, iVal.n)
             }
-            is Instruction.JMP -> {
+            is Instruction.CMP -> {
                 assertEquals(0b00001000, opFlags.n)
+                assertEquals(instruction.jmp, ab.peek())
                 assertEquals(instruction.cond, JumpCondition(cond.n))
-                assertEquals(instruction.addr.code, regB.n)
+                assertEquals(instruction.reg.code, regB.n)
             }
             is Instruction.ALU -> {
                 assertEquals(0b00000100, opFlags.n)
@@ -149,7 +165,8 @@ class ComponentTest {
             Instruction.MOV(ReadOnlyRegister.IP, WritableRegister.A),
             Instruction.MOV(WritableRegister.B, WritableRegister.C),
             Instruction.SET(true, WritableRegister.B,254),
-            Instruction.JMP(JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
+            Instruction.CMP(false, JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
+            Instruction.CMP(true, JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
             Instruction.ALU(false, WritableRegister.D, WritableRegister.Q, AluOperation.OR),
             Instruction.MEM(true, WritableRegister.SP, WritableRegister.P),
             Instruction.IO(true, WritableRegister.A, WritableRegister.B)
