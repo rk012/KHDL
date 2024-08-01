@@ -1,7 +1,9 @@
 package hdl
 
+typealias PinEvalContext = Pair<Int?, Set<Any>>
+
 interface OutputPin {
-    val peek: DeepRecursiveFunction<Pair<Int?, Set<Any>>, Boolean>
+    val peek: DeepRecursiveFunction<PinEvalContext, Boolean>
 
     fun peek(nonce: Int? = null) = peek.invoke(nonce to emptySet())
 
@@ -10,6 +12,11 @@ interface OutputPin {
 
 interface InputPin {
     infix fun bind(pin: OutputPin)
+}
+
+@InternalHdlApi
+fun outputPin(peek: suspend DeepRecursiveScope<PinEvalContext, Boolean>.(PinEvalContext) -> Boolean) = object : OutputPin {
+    override val peek = DeepRecursiveFunction(peek)
 }
 
 @InternalHdlApi

@@ -35,10 +35,8 @@ class Nand {
     val a: InputPin = _a
     val b: InputPin = _b
 
-    val out = object : OutputPin {
-        override val peek = DeepRecursiveFunction<Pair<Int?, Set<Any>>, Boolean> { (nonce, visited) ->
-            !(_a.peek.callRecursive(nonce to visited) && _b.peek.callRecursive(nonce to visited))
-        }
+    val out = outputPin { ctx ->
+        !(_a.peek.callRecursive(ctx) && _b.peek.callRecursive(ctx))
     }
 }
 
@@ -59,11 +57,7 @@ class DFF(clk: Clock) : ClockedChip {
     private var x = false
     private var y = false
 
-    val out = object : OutputPin {
-        override val peek = DeepRecursiveFunction<Pair<Int?, Set<Any>>, Boolean> {
-            y
-        }
-    }
+    val out = outputPin { y }
 
     init {
         clk.addChip(this)

@@ -1,9 +1,7 @@
 package hardware
 
-import hdl.BusSource
-import hdl.Clock
-import hdl.TestBus
-import hdl.bind
+import hdl.*
+import kotlin.random.Random
 import kotlin.test.Test
 
 class MemTest {
@@ -84,5 +82,41 @@ class MemTest {
             clk,
             src
         )
+    }
+
+    class VirtualRamTester(clk: Clock) {
+        private val ramA = Ram(clk, 2, 2)
+        private val ramB = VirtualRam(clk, 2, 2)
+
+        private val xorA = Xor()
+        private val xorB = Xor()
+        private val or = Or()
+
+        init {
+            listOf(xorA.a, xorB.a) bind ramA.out
+            listOf(xorA.b, xorB.b) bind ramB.out
+            or.a bind xorA.out
+            or.b bind xorB.out
+        }
+
+        val input = multiInputBus(ramA.input, ramB.input)
+        val addr = multiInputBus(ramA.addr, ramB.addr)
+        val w = multiInputPins(ramA.w, ramB.w)
+
+        val err = or.out
+    }
+
+    @Test
+    fun virtualRam() {
+        val rand = Random(37)
+        val clk = Clock()
+        val tester = VirtualRamTester(clk)
+        val src = BusSource(5)
+
+        tester.input + tester.addr + listOf(tester.w) bind src.outputBus
+
+        val lines = List(1000) { rand.nextBits(5) shl 1}
+
+        TestBus(listOf(tester.err)).testLines(lines, clk, src)
     }
 }

@@ -66,3 +66,41 @@ class Ram(clk: Clock, addrSize: Int, wordSize: Int) {
 
     val out: OutputBus = mux.map { it.out }
 }
+
+@OptIn(InternalHdlApi::class)
+class VirtualRam(clk: Clock, addrSize: Int, wordSize: Int) : ClockedChip {
+    private val _input = PinHeader(wordSize)
+    private val _addr = PinHeader(addrSize)
+    private val _w = PinImpl()
+
+    private val arr = IntArray(1 shl addrSize)
+
+    val input: InputBus = _input.input
+    val addr: InputBus = _addr.input
+    val w: InputPin = _w
+
+    private var writeCommand: Pair<Int, Int>? = null
+
+    val out: OutputBus = List(wordSize) { i ->
+        outputPin { ctx ->
+            arr[_addr.output.peekInt(ctx)] and (1 shl i) != 0
+        }
+    }.reversed()
+
+    init {
+        clk.addChip(this)
+    }
+
+    override fun tick(nonce: Int?) {
+        writeCommand = null
+
+        if (_w.peek(nonce)) {
+            writeCommand = _addr.output.peekInt(nonce) to _input.output.peekInt(nonce)
+        }
+    }
+
+    override fun tock() {
+        val (addr, value) = writeCommand ?: return
+        arr[addr] = value
+    }
+}
