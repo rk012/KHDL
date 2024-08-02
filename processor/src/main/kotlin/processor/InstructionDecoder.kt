@@ -23,7 +23,7 @@ class InstructionDecoder {
     val nop = dmux.out[1]
     val mov = dmux.out[2]
     val set = dmux.out[3]
-    val jmp = dmux.out[4]
+    val cmp = dmux.out[4]
     val alu = dmux.out[5]
     val mem = dmux.out[6]
     val  io = dmux.out[7]

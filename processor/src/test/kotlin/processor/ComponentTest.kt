@@ -16,13 +16,13 @@ class ComponentTest {
 
         TestBus(counter.out).testLines(
             listOf(
-                0b0000_1_0__0000,
-                0b1111_0_0__0000,
-                0b1111_0_1__0000,
+                0b0001_1_0__0000,
+                0b1111_0_0__0001,
                 0b1111_0_1__0001,
                 0b1111_0_1__0010,
                 0b1111_0_1__0011,
-                0b1110_1_1__0100,
+                0b1111_0_1__0100,
+                0b1110_1_1__0101,
                 0b1111_0_1__1110,
                 0b1001_0_1__1111,
                 0b1001_0_1__0000,
@@ -73,6 +73,26 @@ class ComponentTest {
                 0b0001_110_0_000_110__1010_0001,
             ),
             clk, src
+        )
+    }
+
+    @Test
+    fun partialWrite() {
+        val chip = PartialWrite(4)
+        val src = BusSource(7)
+
+        (chip.oldVal + chip.partial + listOf(chip.sideFlag)) bind src.outputBus
+
+        TestBus(chip.newVal).testLines(
+            listOf(
+                0b0000_11_1__1100,
+                0b1111_00_0__1100,
+                0b1111_00_1__0011,
+                0b1010_10_1__1010,
+                0b1010_01_0__1001,
+                0b1010_01_1__0110,
+            ),
+            Clock(), src
         )
     }
 
@@ -179,7 +199,7 @@ class ComponentTest {
         instructions.forEach {
             testInstruction(
                 it, src,
-                opFlags = listOf(chip.hlt, chip.nop, chip.mov, chip.set, chip.jmp, chip.alu, chip.mem, chip.io),
+                opFlags = listOf(chip.hlt, chip.nop, chip.mov, chip.set, chip.cmp, chip.alu, chip.mem, chip.io),
                 ab=chip.ab, cond=chip.cond,
                 xReg=chip.xReg, regA=chip.regA, regB=chip.regB,
                 aluOp=chip.aluOp, iVal=chip.iVal
