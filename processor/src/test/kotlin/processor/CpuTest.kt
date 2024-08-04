@@ -292,4 +292,30 @@ class CpuTest {
         assertEquals(1, readReg(ReadOnlyRegister.IP))
         assertEquals(0x1234, readReg(WritableRegister.A))
     }
+
+    @Test
+    fun rstTest() {
+        enable.value = true
+        memData.setN(Instruction.NOP.code)
+
+        repeat(5) {
+            clk.pulse()
+            clk.pulse()
+        }
+
+        assertEquals(5, readReg(ReadOnlyRegister.IP))
+
+        enable.value = false
+        clk.pulse()
+        enable.value = true
+
+        assertEquals(0, readReg(ReadOnlyRegister.IP))
+
+        repeat(5) {
+            clk.pulse()
+            clk.pulse()
+        }
+
+        assertEquals(5, readReg(ReadOnlyRegister.IP))
+    }
 }

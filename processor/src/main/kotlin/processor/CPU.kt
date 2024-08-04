@@ -52,7 +52,8 @@ class CPU(clk: Clock) {
         flags.d bind (List(13) { PinSource(false) } + listOf(alu.zero, alu.neg, alu.overflow))
 
         // pc disabled if using dbg instruction
-        pc.input bind registers.b
+        // pc input 0 if not enabled, write true
+        // pc.input bind registers.b
 
         xReg.cpuRegOut bind registers.a
         xReg.ipRegOut bind pc.out
@@ -113,12 +114,28 @@ class CPU(clk: Clock) {
         registers.addrA bind dbgRegAddrASwitch.out
     }
 
+    // PC Input
+    private val pcInputSwitch = BusSwitch(16)
+
+    init {
+        pcInputSwitch.a bind BusSource(16).apply { setN(0) }.outputBus
+        pcInputSwitch.b bind registers.b
+        pcInputSwitch.select bind enableH.output[0]
+
+        pc.input bind pcInputSwitch.out
+    }
+
     // CMP PC JMP
+    private val notEn = Not()
+
     private val and_cmp_jmpEn = And()
     private val and_cmpOp_exec = And()
     private val and_cmpJmpEn_cmpOpExec = And()
+    private val or_jmp_notEn = Or()
 
     init {
+        notEn.a bind enableH.output[0]
+
         and_cmp_jmpEn.a bind decoder.ab
         and_cmp_jmpEn.b bind cmp.output
         and_cmpOp_exec.a bind decoder.cmp
@@ -127,7 +144,10 @@ class CPU(clk: Clock) {
         and_cmpJmpEn_cmpOpExec.a bind and_cmp_jmpEn.out
         and_cmpJmpEn_cmpOpExec.b bind and_cmpOp_exec.out
 
-        pc.w bind and_cmpJmpEn_cmpOpExec.out
+        or_jmp_notEn.a bind and_cmpJmpEn_cmpOpExec.out
+        or_jmp_notEn.b bind notEn.out
+
+        pc.w bind or_jmp_notEn.out
     }
 
     // xReg addr
@@ -141,7 +161,6 @@ class CPU(clk: Clock) {
     }
 
     // Instruction line
-    private val notEn = Not()
     private val dbgInstrSw = BusSwitch(16)
     private val nopSw = BusSwitch(16)
 
@@ -150,7 +169,6 @@ class CPU(clk: Clock) {
         dbgInstrSw.b bind dbgInH.output
         dbgInstrSw.select bind dbgInstruction
 
-        notEn.a bind enableH.output[0]
         nopSw.a bind dbgInstrSw.out
         nopSw.b bind BusSource(16).apply { setN(NOP_CODE) }.outputBus
         nopSw.select bind notEn.out
