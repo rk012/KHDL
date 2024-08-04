@@ -43,7 +43,7 @@ class Nand {
 @InternalHdlApi
 interface ClockedChip {
     @InternalHdlApi
-    fun tick(nonce: Int?)
+    fun tick(nonce: Any)
 
     @InternalHdlApi
     fun tock()
@@ -63,7 +63,7 @@ class DFF(clk: Clock) : ClockedChip {
         clk.addChip(this)
     }
 
-    override fun tick(nonce: Int?) {
+    override fun tick(nonce: Any) {
         x = _in.peek(nonce)
     }
 

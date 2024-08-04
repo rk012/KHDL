@@ -7,7 +7,7 @@ typealias InputBus = List<InputPin>
 fun OutputBus.peekInt(ctx: PinEvalContext) =
     map { it.peek.invoke(ctx) }.fold(0) { acc, bit -> (acc shl 1) or if (bit) 1 else 0 }
 
-fun OutputBus.peekInt(nonce: Int? = null) = peekInt(nonce to emptySet())
+fun OutputBus.peekInt(nonce: Any = Any()) = peekInt(nonce to emptySet())
 
 infix fun InputBus.bind(bus: OutputBus) {
     require(size == bus.size)

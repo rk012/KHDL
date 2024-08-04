@@ -91,7 +91,7 @@ class VirtualRam(clk: Clock, addrSize: Int, wordSize: Int) : ClockedChip {
         clk.addChip(this)
     }
 
-    override fun tick(nonce: Int?) {
+    override fun tick(nonce: Any) {
         writeCommand = null
 
         if (_w.peek(nonce)) {
