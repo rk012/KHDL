@@ -1,11 +1,14 @@
-import common.*
+package common
+
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ComputerTest {
+interface ComputerTest {
+    fun new(rom: List<Int>): Computer
+
     @Test
     fun fibs() {
-        val c: Computer = HardwareComputer(listOf(
+        val c: Computer = new(listOf(
             Instruction.SET(true, WritableRegister.A, 0),
             Instruction.SET(false, WritableRegister.A, 1),
 

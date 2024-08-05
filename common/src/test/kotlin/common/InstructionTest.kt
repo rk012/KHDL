@@ -3,7 +3,7 @@ package common
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class InstructionTest {
+internal class InstructionTest {
     @Test
     fun decodeTest() {
         val instructions = listOf(
