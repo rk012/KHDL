@@ -1,4 +1,4 @@
-package processor
+package processor.components
 
 import hardware.BusSwitch
 import hdl.InputBus
@@ -6,7 +6,7 @@ import hdl.OutputBus
 import hdl.multiInputBus
 import hdl.multiInputPins
 
-class PartialWrite(fullSize: Int) {
+internal class PartialWrite(fullSize: Int) {
     init {
         require(fullSize % 2 == 0)
     }

@@ -1,4 +1,4 @@
-package processor
+package processor.components
 
 import hardware.And
 import hardware.Nor
@@ -7,7 +7,7 @@ import hardware.Xor
 import hdl.InputBus
 import hdl.multiInputPins
 
-class JmpCmp {
+internal class JmpCmp {
     private val xor = Xor()
     private val nor = Nor()
 

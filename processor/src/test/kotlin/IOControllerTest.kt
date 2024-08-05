@@ -6,7 +6,7 @@ import hdl.TestBus
 import hdl.bind
 import kotlin.test.Test
 
-class HardwareIOControllerTest {
+class IOControllerTest {
     private fun dev(c: IOController) = object : IODevice {
         override val inputPorts = setOf(0)
         override val outputPorts = setOf(0)

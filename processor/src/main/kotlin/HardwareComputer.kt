@@ -10,7 +10,8 @@ import processor.CPU
 class HardwareComputer(override val rom: List<Int>) : Computer {
     private val clk = Clock()
 
-    override val ioController = HardwareIOController(clk, 16, 16)
+    private val _ioController = HardwareIOController(clk, 16, 16)
+    override val ioController: IOController = _ioController
 
     private val ram = VirtualRam(clk, 16, 16)
     private val cpu = CPU(clk)
@@ -47,10 +48,10 @@ class HardwareComputer(override val rom: List<Int>) : Computer {
 
         cpu.memData bind ram.out
 
-        ioController.d bind cpu.dataOut
-        ioController.addr bind cpu.addrOut
-        ioController.w bind cpu.ioWrite
-        cpu.ioData bind ioController.out
+        _ioController.d bind cpu.dataOut
+        _ioController.addr bind cpu.addrOut
+        _ioController.w bind cpu.ioWrite
+        cpu.ioData bind _ioController.out
 
         enNor.a bind rst
         enNor.b bind bootloader.w

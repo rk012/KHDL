@@ -2,7 +2,7 @@ import common.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class HardwareComputerTest {
+class ComputerTest {
     @Test
     fun fibs() {
         val c: Computer = HardwareComputer(listOf(

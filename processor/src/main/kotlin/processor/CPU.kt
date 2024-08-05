@@ -5,8 +5,14 @@ package processor
 import common.Instruction.NOP.code as NOP_CODE
 import hardware.*
 import hdl.*
+import processor.components.*
+import processor.components.CpuRegisters
+import processor.components.InstructionDecoder
+import processor.components.JmpCmp
+import processor.components.ProgramCounter
+import processor.components.XReg
 
-class CPU(clk: Clock) {
+internal class CPU(clk: Clock) {
     // Inputs
     private val enableH = PinHeader(1)
     private val memDataH = PinHeader(16)

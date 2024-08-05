@@ -4,10 +4,11 @@ import hardware.IsZero
 import hardware.Nor
 import hardware.Xor
 import hdl.*
+import processor.components.ProgramCounter
 
 
 @OptIn(InternalHdlApi::class)
-class Bootloader(clk: Clock, rom: List<Int>, size: Int) {
+internal class Bootloader(clk: Clock, rom: List<Int>, size: Int) {
     init {
         require(rom.size < 1 shl size)
     }

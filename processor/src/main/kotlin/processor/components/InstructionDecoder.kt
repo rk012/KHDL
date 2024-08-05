@@ -1,4 +1,4 @@
-package processor
+package processor.components
 
 import hardware.DMux
 import hdl.InputBus
@@ -6,7 +6,7 @@ import hdl.PinHeader
 import hdl.PinSource
 import hdl.bind
 
-class InstructionDecoder {
+internal class InstructionDecoder {
     private val header = PinHeader(16)
     private val dmux = DMux(3)
 

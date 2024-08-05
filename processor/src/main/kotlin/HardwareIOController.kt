@@ -3,7 +3,7 @@ import common.IODevice
 import hdl.*
 
 @OptIn(InternalHdlApi::class)
-class HardwareIOController(clk: Clock, wordSize: Int, addrSize: Int) : IOController, ClockedChip {
+internal class HardwareIOController(clk: Clock, wordSize: Int, addrSize: Int) : IOController, ClockedChip {
     init {
         clk.addChip(this)
     }

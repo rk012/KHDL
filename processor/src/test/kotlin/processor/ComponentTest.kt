@@ -2,6 +2,12 @@ package processor
 
 import common.*
 import hdl.*
+import processor.components.*
+import processor.components.CpuRegisters
+import processor.components.FetchState
+import processor.components.InstructionDecoder
+import processor.components.JmpCmp
+import processor.components.ProgramCounter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

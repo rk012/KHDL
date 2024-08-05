@@ -1,11 +1,11 @@
-package processor
+package processor.components
 
 import hardware.DMux
 import hardware.Mux
 import hardware.Register
 import hdl.*
 
-class CpuRegisters(clk: Clock) {
+internal class CpuRegisters(clk: Clock) {
     private val registers = List(8) { Register(clk, 16) }
 
     private val inputHeader = PinHeader(16)

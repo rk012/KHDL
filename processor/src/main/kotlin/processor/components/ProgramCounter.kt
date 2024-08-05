@@ -1,10 +1,10 @@
-package processor
+package processor.components
 
 import hardware.BusSwitch
 import hardware.HalfAdder
 import hdl.*
 
-class ProgramCounter(clk: Clock, size: Int) {
+internal class ProgramCounter(clk: Clock, size: Int) {
     init {
         require(size > 1)
     }

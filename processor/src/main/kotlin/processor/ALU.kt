@@ -3,7 +3,7 @@ package processor
 import hardware.*
 import hdl.*
 
-class ALU(wordSize: Int) {
+internal class ALU(wordSize: Int) {
     init {
         require(wordSize > 1)
     }

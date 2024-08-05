@@ -1,4 +1,4 @@
-package processor
+package processor.components
 
 import hardware.BusSwitch
 import hdl.InputBus
@@ -6,7 +6,7 @@ import hdl.OutputBus
 import hdl.PinHeader
 import hdl.bind
 
-class XReg {
+internal class XReg {
     private val addrHeader = PinHeader(4)
 
     private val s1 = BusSwitch(16)
