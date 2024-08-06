@@ -3,33 +3,18 @@ import common.IODevice
 import hdl.*
 
 @OptIn(InternalHdlApi::class)
-internal class HardwareIOController(clk: Clock, wordSize: Int, addrSize: Int) : IOController, ClockedChip {
+internal class HardwareIOController(clk: Clock, wordSize: Int, addrSize: Int) : IOController(), ClockedChip {
     init {
         clk.addChip(this)
     }
 
-    private val readPorts = mutableSetOf<Int>()
-    private val writePorts = mutableSetOf<Int>()
-
-    private val devices = mutableListOf<IODevice>()
-
-    private val readBuf = IntArray(wordSize)
-    private val writeBuf = IntArray(wordSize)
-    private val outputBuf = IntArray(wordSize)
+    private val readBuf = IntArray(1 shl addrSize)
+    private val writeBuf = IntArray(1 shl addrSize)
+    private val outputBuf = IntArray(1 shl addrSize)
 
     private val _addr = PinHeader(addrSize)
     private val _data = PinHeader(wordSize)
     private val _w = PinImpl()
-
-    override fun <T : IODevice> install(newDevice: (IOController) -> T) = newDevice(this).also {
-        require((readPorts intersect it.inputPorts).isEmpty())
-        require((writePorts intersect it.outputPorts).isEmpty())
-
-        readPorts += it.inputPorts
-        writePorts += it.outputPorts
-
-        devices.add(it)
-    }
 
     override fun readOutput(port: Int): Int = readBuf[port]
 
