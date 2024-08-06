@@ -74,6 +74,7 @@ class HardwareComputer(override val rom: List<Int>) : Computer {
     override fun runUntilHalt() {
         clk.pulse()
         while (!hlt.peek(clk.nonce)) clk.pulse()
+        runNextInstruction()  // HLT effectively becomes a nop
     }
 
     override fun runNextInstruction() {
@@ -105,12 +106,22 @@ class HardwareComputer(override val rom: List<Int>) : Computer {
     }
 
     override fun runInstructions(instructions: List<Instruction>) {
+        fun dbg(ins: List<Instruction>) {
+            dbgMode.setN(0b11)
+            ins.forEach {
+                dbgData.setN(it.code)
+                clk.pulse()
+                clk.pulse()
+            }
+            dbgMode.setN(0b00)
+        }
+
+        dbg(instructions)
+
         val ip = debugRegister(ReadOnlyRegister.IP) - 1
         val q = debugRegister(WritableRegister.Q)
 
-        dbgMode.setN(0b11)
-
-        val wrappedInstructions = instructions + listOf(
+        val cleanup = listOf(
             Instruction.SET(true, WritableRegister.Q, ip shr 8),
             Instruction.SET(false, WritableRegister.Q, ip and 0xFF),
             Instruction.CMP(true, JumpCondition(0b111), WritableRegister.Q),
@@ -118,12 +129,11 @@ class HardwareComputer(override val rom: List<Int>) : Computer {
             Instruction.SET(false, WritableRegister.Q, q and 0xFF),
         )
 
-        wrappedInstructions.forEach {
-            dbgData.setN(it.code)
-            clk.pulse()
-            clk.pulse()
-        }
-
+        dbg(cleanup.dropLast(1))
+        dbgMode.setN(0b11)
+        dbgData.setN(cleanup.last().code)
+        clk.pulse()
         dbgMode.setN(0b00)
+        clk.pulse()  // Fetch with dbg disabled
     }
 }
