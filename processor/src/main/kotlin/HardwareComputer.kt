@@ -7,7 +7,7 @@ import hdl.*
 import processor.Bootloader
 import processor.CPU
 
-class HardwareComputer(override val rom: List<Int>) : Computer {
+class HardwareComputer(override val rom: Bytecode) : Computer {
     private val clk = Clock()
 
     private val _ioController = HardwareIOController(clk, 16, 16)

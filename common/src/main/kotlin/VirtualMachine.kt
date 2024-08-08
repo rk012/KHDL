@@ -1,7 +1,7 @@
 import common.*
 import java.util.EnumMap
 
-class VirtualMachine(override val rom: List<Int>) : Computer {
+class VirtualMachine(override val rom: Bytecode) : Computer {
     private class VirtualIOController : IOController() {
         val readBuf = IntArray(1 shl 16)
         val writeBuf = IntArray(1 shl 16)

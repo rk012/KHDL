@@ -1,7 +1,7 @@
 package common
 
 interface Computer {
-    val rom: List<Int>
+    val rom: Bytecode
     val ioController: IOController
 
     fun runUntilHalt()
