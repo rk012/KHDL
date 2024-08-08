@@ -4,6 +4,7 @@ import common.*
 import hdl.Clock
 import hdl.PinSource
 import hdl.peekInt
+import s
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -21,7 +22,7 @@ class BootloaderTest {
             Instruction.ALU(false, WritableRegister.D, WritableRegister.Q, AluOperation.OR),
             Instruction.MEM(true, WritableRegister.SP, WritableRegister.P),
             Instruction.IO(true, WritableRegister.A, WritableRegister.B)
-        ).map(Instruction::code) + listOf(1, 2, 3)
+        ).map { it.code.toInt() } + listOf(1, 2, 3)
 
         val clk = Clock()
         val bootloader = Bootloader(clk, rom, 16)
@@ -31,7 +32,7 @@ class BootloaderTest {
 
         rom.forEachIndexed { i, line ->
             assertEquals(i, bootloader.addr.peekInt())
-            assertEquals(line, bootloader.d.peekInt())
+            assertEquals(line.s, bootloader.d.peekInt().s)
             assert(bootloader.w.peek())
 
             clk.pulse()
@@ -55,7 +56,7 @@ class BootloaderTest {
 
         rom.forEachIndexed { i, line ->
             assertEquals(i, bootloader.addr.peekInt())
-            assertEquals(line, bootloader.d.peekInt())
+            assertEquals(line.s, bootloader.d.peekInt().s)
             assert(bootloader.w.peek())
 
             clk.pulse()

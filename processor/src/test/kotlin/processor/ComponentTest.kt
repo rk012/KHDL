@@ -139,7 +139,7 @@ class ComponentTest {
         xReg: OutputBus, regA: OutputBus, regB: OutputBus,
         aluOp: OutputBus, iVal: OutputBus
     ) {
-        src.setN(instruction.code)
+        src.setN(instruction.code.toInt())
 
         when (instruction) {
             Instruction.HLT -> assertEquals(0b10000000, opFlags.n)

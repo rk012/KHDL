@@ -176,7 +176,7 @@ internal class CPU(clk: Clock) {
         dbgInstrSw.select bind dbgInstruction
 
         nopSw.a bind dbgInstrSw.out
-        nopSw.b bind BusSource(16).apply { setN(NOP_CODE) }.outputBus
+        nopSw.b bind BusSource(16).apply { setN(NOP_CODE.toInt()) }.outputBus
         nopSw.select bind notEn.out
 
         decoder.instruction bind nopSw.out

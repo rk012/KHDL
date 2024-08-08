@@ -8,11 +8,11 @@ import kotlin.test.Test
 
 class IOControllerTest {
     private fun dev(c: IOController) = object : IODevice {
-        override val inputPorts = setOf(0)
-        override val outputPorts = setOf(0)
+        override val inputPorts = setOf<UShort>(0u)
+        override val outputPorts = setOf<UShort>(0u)
 
         override fun update() {
-            c[1] = c[0] + 1
+            c[1u] = (c[0u].toInt() + 1).s
         }
     }
 

@@ -15,7 +15,7 @@ class HardwareComputer(override val rom: Bytecode) : Computer {
 
     private val ram = VirtualRam(clk, 16, 16)
     private val cpu = CPU(clk)
-    private val bootloader = Bootloader(clk, rom, 16)
+    private val bootloader = Bootloader(clk, rom.map { it.toInt() }, 16)
 
     private val rst = PinSource(false)
 
@@ -89,27 +89,27 @@ class HardwareComputer(override val rom: Bytecode) : Computer {
         runBootloader()
     }
 
-    override fun debugRegister(register: Register): Int {
+    override fun debugRegister(register: Register): Short {
         dbgMode.setN(0b01)
         dbgData.setN(register.xCode)
         val res = dbgOut.peekInt()
         dbgMode.setN(0b00)
-        return res
+        return res.s
     }
 
-    override fun debugMemory(address: Int): Int {
+    override fun debugMemory(address: Int): Short {
         dbgMode.setN(0b10)
         dbgData.setN(address)
         val res = dbgOut.peekInt()
         dbgMode.setN(0b00)
-        return res
+        return res.s
     }
 
     override fun runInstructions(instructions: List<Instruction>) {
         fun dbg(ins: List<Instruction>) {
             dbgMode.setN(0b11)
             ins.forEach {
-                dbgData.setN(it.code)
+                dbgData.setN(it.code.toInt())
                 clk.pulse()
                 clk.pulse()
             }
@@ -125,13 +125,13 @@ class HardwareComputer(override val rom: Bytecode) : Computer {
             Instruction.SET(true, WritableRegister.Q, ip shr 8),
             Instruction.SET(false, WritableRegister.Q, ip and 0xFF),
             Instruction.CMP(true, JumpCondition(0b111), WritableRegister.Q),
-            Instruction.SET(true, WritableRegister.Q, q shr 8),
-            Instruction.SET(false, WritableRegister.Q, q and 0xFF),
+            Instruction.SET(true, WritableRegister.Q, q.toInt() shr 8),
+            Instruction.SET(false, WritableRegister.Q, q.toInt() and 0xFF),
         )
 
         dbg(cleanup.dropLast(1))
         dbgMode.setN(0b11)
-        dbgData.setN(cleanup.last().code)
+        dbgData.setN(cleanup.last().code.toInt())
         clk.pulse()
         dbgMode.setN(0b00)
         clk.pulse()  // Fetch with dbg disabled

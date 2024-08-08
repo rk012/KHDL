@@ -1,3 +1,3 @@
 package common
 
-typealias Bytecode = List<Int>
+typealias Bytecode = List<Short>

@@ -1,8 +1,8 @@
 package common
 
 interface IODevice {
-    val inputPorts: Set<Int>
-    val outputPorts: Set<Int>
+    val inputPorts: Set<UShort>
+    val outputPorts: Set<UShort>
 
     fun update()
 }

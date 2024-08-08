@@ -19,7 +19,7 @@ internal class InstructionTest {
             Instruction.IO(true, WritableRegister.A, WritableRegister.B)
         )
 
-        val decoded = instructions.map(Instruction::code).map(Instruction::parse)
+        val decoded = instructions.map(Instruction::code).map { Instruction.parse(it.toInt()) }
 
         assertEquals(instructions, decoded)
     }

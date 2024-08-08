@@ -8,7 +8,7 @@ interface Computer {
     fun runNextInstruction()
     fun reset()
 
-    fun debugRegister(register: Register): Int
-    fun debugMemory(address: Int): Int
+    fun debugRegister(register: Register): Short
+    fun debugMemory(address: Int): Short
     fun runInstructions(instructions: List<Instruction>)
 }

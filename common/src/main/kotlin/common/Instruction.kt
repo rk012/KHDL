@@ -5,7 +5,7 @@ sealed class Instruction(opcode: Int, vararg masks: Int) {
         private fun boolMask(flag: Boolean) = (if (flag) 1 else 0) shl 12
 
         fun parse(code: Int): Instruction {
-            val op = code shr 13
+            val op = (code shr 13) and 0b111
             val flag = ((code shr 12) and 1) != 0
             val xReg = (code shr 9) and 0b1111
             val regA = xReg and 0b111
@@ -37,7 +37,7 @@ sealed class Instruction(opcode: Int, vararg masks: Int) {
         }
     }
 
-    val code = (opcode shl 13) or if (masks.isNotEmpty()) masks.reduce(Int::or) else 0
+    val code = ((opcode shl 13) or if (masks.isNotEmpty()) masks.reduce(Int::or) else 0).toShort()
 
     data object HLT : Instruction(0b000)
     data object NOP : Instruction(0b001)

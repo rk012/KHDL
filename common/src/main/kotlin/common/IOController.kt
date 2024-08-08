@@ -1,8 +1,8 @@
 package common
 
 abstract class IOController {
-    private val readPorts = mutableSetOf<Int>()
-    private val writePorts = mutableSetOf<Int>()
+    private val readPorts = mutableSetOf<UShort>()
+    private val writePorts = mutableSetOf<UShort>()
 
     private val _devices = mutableListOf<IODevice>()
     protected val devices: List<IODevice> get() = _devices
@@ -17,9 +17,9 @@ abstract class IOController {
         _devices.add(it)
     }
 
-    abstract fun readOutput(port: Int): Int
-    abstract fun writeInput(port: Int, value: Int)
+    abstract fun readOutput(port: UShort): Short
+    abstract fun writeInput(port: UShort, value: Short)
 
-    operator fun get(port: Int): Int = readOutput(port)
-    operator fun set(port: Int, value: Int) = writeInput(port, value)
+    operator fun get(port: UShort): Short = readOutput(port)
+    operator fun set(port: UShort, value: Short) = writeInput(port, value)
 }

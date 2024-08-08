@@ -1,20 +1,21 @@
 package common
 
+import s
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 interface ComputerTest {
     private class IOListener(private val controller: IOController) : IODevice {
-        override val inputPorts = setOf(0)
-        override val outputPorts = emptySet<Int>()
+        override val inputPorts = setOf<UShort>(0u)
+        override val outputPorts = emptySet<UShort>()
 
-        private val _out = mutableListOf<Int>()
-        val output: List<Int> get() = _out
+        private val _out = mutableListOf<Short>()
+        val output: List<Short> get() = _out
 
-        private var last = 0
+        private var last = 0.s
 
         override fun update() {
-            val n = controller[0]
+            val n = controller[0u]
             if (n == last) return
 
             last = n
@@ -22,7 +23,7 @@ interface ComputerTest {
         }
     }
 
-    fun new(rom: List<Int>): Computer
+    fun new(rom: Bytecode): Computer
 
     @Test
     fun fibs() {
@@ -47,15 +48,15 @@ interface ComputerTest {
             Instruction.HLT
         ).map(Instruction::code))
 
-        val expected: List<Int> = sequence {
+        val expected: List<Short> = sequence {
             var a = 1
             var b = 0
 
             while (true) {
-                yield(a)
+                yield(a.s)
                 a = (a+b).also { b = a }
             }
-        }.drop(1).takeWhile { it < (1 shl 15) - 1 }.toList()
+        }.drop(1).takeWhile { it > 0 }.toList()
 
         val dev = c.ioController.install(::IOListener)
 
@@ -118,5 +119,19 @@ interface ComputerTest {
         c.runInstructions(listOf(Instruction.NOP, Instruction.NOP, Instruction.NOP))
         
         assertEquals(regVals, registers.associateWith { c.debugRegister(it) })
+    }
+
+    @Test
+    fun signedMemTest() {
+        val c = new(listOf(
+            Instruction.SET(true, WritableRegister.A, 0x80),
+            Instruction.SET(false, WritableRegister.A, 0xFF),
+            Instruction.MEM(true, WritableRegister.A, WritableRegister.A),
+            Instruction.HLT
+        ).map(Instruction::code))
+
+        c.runUntilHalt()
+
+        assertEquals(0x80FF.s, c.debugMemory(0x80FF))
     }
 }
