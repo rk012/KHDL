@@ -33,8 +33,7 @@ class VirtualMachine(override val rom: Bytecode) : Computer {
     private var flags = 0
     private var halt = false
 
-    private fun Int.sgn16() = if (this@sgn16 and 0x8000 == 0) this@sgn16 else (1 shl 16) - this@sgn16
-    private fun Int.trim16() = (this and 0xFFFF).sgn16()
+    private fun Int.trim16() = toShort().toInt()
 
     private fun readReg(register: Register) = when (register) {
         is WritableRegister -> registers[register] ?: 0
@@ -90,14 +89,16 @@ class VirtualMachine(override val rom: Bytecode) : Computer {
 
             is Instruction.ALU -> {
                 val dest = if (instruction.q) WritableRegister.Q else WritableRegister.P
-                val res = instruction.op.computation(readReg(instruction.a), readReg(instruction.b))
+                var res = instruction.op.computation(readReg(instruction.a), readReg(instruction.b))
 
                 val overflow = (instruction.op.opcode and 0b000010) != 0 && res !in (-32768..32767)
                 var flag = if (overflow) 0b100 else 0
+
+                res = res.trim16()
                 if (res < 0) flag = flag or 0b001
                 if (res == 0) flag = flag or 0b010
 
-                registers[dest] = res.trim16()
+                registers[dest] = res
                 flags = flag
             }
 
