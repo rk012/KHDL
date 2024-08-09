@@ -10,5 +10,5 @@ interface Computer {
 
     fun debugRegister(register: Register): Short
     fun debugMemory(address: Int): Short
-    fun runInstructions(instructions: List<Instruction>)
+    fun runInstructions(instructions: List<CpuInstruction>)
 }

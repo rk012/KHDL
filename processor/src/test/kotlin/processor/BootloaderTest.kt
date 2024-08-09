@@ -12,16 +12,16 @@ class BootloaderTest {
     @Test
     fun bootloader() {
         val rom = listOf(
-            Instruction.NOP,
-            Instruction.HLT,
-            Instruction.MOV(ReadOnlyRegister.IP, WritableRegister.A),
-            Instruction.MOV(WritableRegister.B, WritableRegister.C),
-            Instruction.SET(true, WritableRegister.B,254),
-            Instruction.CMP(false, JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
-            Instruction.CMP(true, JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
-            Instruction.ALU(false, WritableRegister.D, WritableRegister.Q, AluOperation.OR),
-            Instruction.MEM(true, WritableRegister.SP, WritableRegister.P),
-            Instruction.IO(true, WritableRegister.A, WritableRegister.B)
+            CpuInstruction.NOP,
+            CpuInstruction.HLT,
+            CpuInstruction.MOV(ReadOnlyRegister.IP, WritableRegister.A),
+            CpuInstruction.MOV(WritableRegister.B, WritableRegister.C),
+            CpuInstruction.SET(true, WritableRegister.B,254),
+            CpuInstruction.CMP(false, JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
+            CpuInstruction.CMP(true, JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
+            CpuInstruction.ALU(false, WritableRegister.D, WritableRegister.Q, AluOperation.OR),
+            CpuInstruction.MEM(true, WritableRegister.SP, WritableRegister.P),
+            CpuInstruction.IO(true, WritableRegister.A, WritableRegister.B)
         ).map { it.code.toInt() } + listOf(1, 2, 3)
 
         val clk = Clock()

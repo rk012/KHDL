@@ -55,21 +55,21 @@ class VirtualMachine(override val rom: Bytecode) : Computer {
     }
 
 
-    private fun exec(instruction: Instruction) {
+    private fun exec(instruction: CpuInstruction) {
         when (instruction) {
-            Instruction.HLT -> halt = true
-            Instruction.NOP -> Unit
+            CpuInstruction.HLT -> halt = true
+            CpuInstruction.NOP -> Unit
 
-            is Instruction.MOV -> registers[instruction.dest] = readReg(instruction.src)
+            is CpuInstruction.MOV -> registers[instruction.dest] = readReg(instruction.src)
 
-            is Instruction.SET -> {
+            is CpuInstruction.SET -> {
                 val part = if (instruction.sideFlag) instruction.value shl 8 else instruction.value
                 val mask = if (instruction.sideFlag) 0x00FF else 0xFF00
 
                 registers[instruction.dest] = (readReg(instruction.dest) and mask.s) or part.s
             }
 
-            is Instruction.CMP -> {
+            is CpuInstruction.CMP -> {
                 val overflow = (flags and 0b100) != 0.s
 
                 val lt = overflow xor ((flags and 0b001) != 0.s)
@@ -87,7 +87,7 @@ class VirtualMachine(override val rom: Bytecode) : Computer {
                 }
             }
 
-            is Instruction.ALU -> {
+            is CpuInstruction.ALU -> {
                 val dest = if (instruction.q) WritableRegister.Q else WritableRegister.P
                 val intRes = instruction.op.computation(readReg(instruction.a).toInt(), readReg(instruction.b).toInt())
                 val res = intRes.s
@@ -102,13 +102,13 @@ class VirtualMachine(override val rom: Bytecode) : Computer {
                 flags = flag.s
             }
 
-            is Instruction.MEM -> if (instruction.w) {
+            is CpuInstruction.MEM -> if (instruction.w) {
                 ram[readReg(instruction.addr).toUShort().toInt()] = readReg(instruction.d)
             } else {
                 registers[instruction.d] = ram[readReg(instruction.addr).toUShort().toInt()]
             }
 
-            is Instruction.IO -> if (instruction.w) {
+            is CpuInstruction.IO -> if (instruction.w) {
                 controller.readBuf[readReg(instruction.addr).toUShort().toInt()] = readReg(instruction.d)
             } else {
                 registers[instruction.d] = controller.writeBuf[readReg(instruction.addr).toUShort().toInt()]
@@ -118,7 +118,7 @@ class VirtualMachine(override val rom: Bytecode) : Computer {
         controller.update()
     }
 
-    override fun runNextInstruction() = exec(Instruction.parse(ram[ip++].toInt()))
+    override fun runNextInstruction() = exec(CpuInstruction.parse(ram[ip++].toInt()))
 
     override fun runUntilHalt() {
         while (!halt) {
@@ -133,7 +133,7 @@ class VirtualMachine(override val rom: Bytecode) : Computer {
 
     override fun debugMemory(address: Int) = ram[address]
 
-    override fun runInstructions(instructions: List<Instruction>) {
+    override fun runInstructions(instructions: List<CpuInstruction>) {
         instructions.forEach(::exec)
     }
 }

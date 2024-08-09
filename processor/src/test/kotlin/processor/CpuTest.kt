@@ -51,7 +51,7 @@ class CpuTest {
         execActive = cpu.execActive
     }
 
-    private val Instruction.ic: Int get() = code.toInt()
+    private val CpuInstruction.ic: Int get() = code.toInt()
 
     private fun readReg(reg: Register): Int {
         dbgMode.setN(0b01)
@@ -72,7 +72,7 @@ class CpuTest {
         memData.setN(res)
     }
 
-    private fun runInstructions(vararg instructions: Instruction) {
+    private fun runInstructions(vararg instructions: CpuInstruction) {
         assert(!execActive.peek() && enable.value)
         instructions.forEach {
             memData.setN(it.ic)
@@ -82,14 +82,14 @@ class CpuTest {
     }
 
     private fun setReg(reg: WritableRegister, value: Int) = runInstructions(
-        Instruction.SET(true, reg, value shr 8),
-        Instruction.SET(false, reg, value and 0xFF)
+        CpuInstruction.SET(true, reg, value shr 8),
+        CpuInstruction.SET(false, reg, value and 0xFF)
     )
 
     @Test
     fun enable() {
         enable.value = false
-        memData.setN(Instruction.NOP.ic)
+        memData.setN(CpuInstruction.NOP.ic)
 
         assert(!execActive.peek())
         assertReadOnly()
@@ -110,7 +110,7 @@ class CpuTest {
     @Test
     fun hlt() {
         enable.value = true
-        memData.setN(Instruction.HLT.ic)
+        memData.setN(CpuInstruction.HLT.ic)
 
         assert(!execActive.peek())
         assert(!hlt.peek())
@@ -128,7 +128,7 @@ class CpuTest {
     @Test
     fun nop() {
         enable.value = true
-        memData.setN(Instruction.NOP.ic)
+        memData.setN(CpuInstruction.NOP.ic)
 
         repeat(5) { i ->
             assert(!execActive.peek())
@@ -148,14 +148,14 @@ class CpuTest {
     @Test
     fun setMov() {
         enable.value = true
-        assertMemRead(0, Instruction.SET(true, WritableRegister.A, 0x12).ic)
+        assertMemRead(0, CpuInstruction.SET(true, WritableRegister.A, 0x12).ic)
         clk.pulse()
         clk.pulse()
-        assertMemRead(1, Instruction.SET(false, WritableRegister.A, 0x34).ic)
+        assertMemRead(1, CpuInstruction.SET(false, WritableRegister.A, 0x34).ic)
         clk.pulse()
         clk.pulse()
         assertEquals(0x1234, readReg(WritableRegister.A))
-        assertMemRead(2, Instruction.MOV(WritableRegister.A, WritableRegister.B).ic)
+        assertMemRead(2, CpuInstruction.MOV(WritableRegister.A, WritableRegister.B).ic)
         clk.pulse()
         clk.pulse()
         assertEquals(0x1234, readReg(WritableRegister.B))
@@ -165,32 +165,32 @@ class CpuTest {
     @Test
     fun setMemIO() {
         enable.value = true
-        assertMemRead(0, Instruction.SET(true, WritableRegister.A, 0xDE).ic)
+        assertMemRead(0, CpuInstruction.SET(true, WritableRegister.A, 0xDE).ic)
         clk.pulse()
         clk.pulse()
-        assertMemRead(1, Instruction.SET(false, WritableRegister.A, 0xEF).ic)
+        assertMemRead(1, CpuInstruction.SET(false, WritableRegister.A, 0xEF).ic)
         clk.pulse()
         clk.pulse()
-        assertMemRead(2, Instruction.SET(true, WritableRegister.B, 0x56).ic)
+        assertMemRead(2, CpuInstruction.SET(true, WritableRegister.B, 0x56).ic)
         clk.pulse()
         clk.pulse()
-        assertMemRead(3, Instruction.SET(false, WritableRegister.B, 0x78).ic)
+        assertMemRead(3, CpuInstruction.SET(false, WritableRegister.B, 0x78).ic)
         clk.pulse()
         clk.pulse()
-        assertMemRead(4, Instruction.MEM(true, WritableRegister.A, WritableRegister.B).ic)
+        assertMemRead(4, CpuInstruction.MEM(true, WritableRegister.A, WritableRegister.B).ic)
         clk.pulse()
         assertEquals(0x5678, dataOut.peekInt())
         assertEquals(0xDEEF, addrOut.peekInt())
         assert(memWrite.peek())
         assert(!ioWrite.peek())
         clk.pulse()
-        assertMemRead(5, Instruction.IO(false, WritableRegister.A, WritableRegister.B).ic)
+        assertMemRead(5, CpuInstruction.IO(false, WritableRegister.A, WritableRegister.B).ic)
         clk.pulse()
         assertEquals(0xDEEF, addrOut.peekInt())
         assertReadOnly()
         ioData.setN(0x9ABC)
         clk.pulse()
-        assertMemRead(6, Instruction.IO(true, WritableRegister.A, WritableRegister.B).ic)
+        assertMemRead(6, CpuInstruction.IO(true, WritableRegister.A, WritableRegister.B).ic)
         clk.pulse()
         assertEquals(0x9ABC, dataOut.peekInt())
         assertEquals(0xDEEF, addrOut.peekInt())
@@ -206,8 +206,8 @@ class CpuTest {
         setReg(WritableRegister.B, 0x2031)
 
         runInstructions(
-            Instruction.ALU(false, WritableRegister.A, WritableRegister.B, AluOperation.A_PLUS_B),
-            Instruction.ALU(true, WritableRegister.A, WritableRegister.B, AluOperation.A_MINUS_B),
+            CpuInstruction.ALU(false, WritableRegister.A, WritableRegister.B, AluOperation.A_PLUS_B),
+            CpuInstruction.ALU(true, WritableRegister.A, WritableRegister.B, AluOperation.A_MINUS_B),
         )
 
         assertEquals(0x105F + 0x2031, readReg(WritableRegister.P))
@@ -218,7 +218,7 @@ class CpuTest {
         setReg(WritableRegister.B, 0x0001)
 
         runInstructions(
-            Instruction.ALU(false, WritableRegister.A, WritableRegister.B, AluOperation.A_PLUS_B),
+            CpuInstruction.ALU(false, WritableRegister.A, WritableRegister.B, AluOperation.A_PLUS_B),
         )
 
         assertEquals(0x8000, readReg(WritableRegister.P))
@@ -232,10 +232,10 @@ class CpuTest {
         setReg(WritableRegister.A, 0x7FFF)
         setReg(WritableRegister.B, 0x8000)
         runInstructions(
-            Instruction.ALU(false, WritableRegister.A, WritableRegister.B, AluOperation.A_MINUS_B),
-            Instruction.CMP(false, JumpCondition(gt=true), WritableRegister.P),
-            Instruction.CMP(false, JumpCondition(lt=true), WritableRegister.Q),
-            Instruction.CMP(false, JumpCondition(eq=true), WritableRegister.C),
+            CpuInstruction.ALU(false, WritableRegister.A, WritableRegister.B, AluOperation.A_MINUS_B),
+            CpuInstruction.CMP(false, JumpCondition(gt=true), WritableRegister.P),
+            CpuInstruction.CMP(false, JumpCondition(lt=true), WritableRegister.Q),
+            CpuInstruction.CMP(false, JumpCondition(eq=true), WritableRegister.C),
         )
 
         assertEquals(0x0001, readReg(WritableRegister.P))
@@ -248,23 +248,23 @@ class CpuTest {
         enable.value = true
 
         setReg(WritableRegister.A, 0xABCD)
-        memData.setN(Instruction.CMP(true, JumpCondition(0b111), WritableRegister.A).ic)
+        memData.setN(CpuInstruction.CMP(true, JumpCondition(0b111), WritableRegister.A).ic)
         clk.pulse()
         clk.pulse()
-        assertMemRead(0xABCD, Instruction.NOP.ic)
+        assertMemRead(0xABCD, CpuInstruction.NOP.ic)
         clk.pulse()
         assert(execActive.peek())
         clk.pulse()
-        assertMemRead(0xABCE, Instruction.CMP(false, JumpCondition(0b111), WritableRegister.A).ic)
+        assertMemRead(0xABCE, CpuInstruction.CMP(false, JumpCondition(0b111), WritableRegister.A).ic)
         clk.pulse()
         clk.pulse()
-        assertMemRead(0xABCF, Instruction.NOP.ic)
+        assertMemRead(0xABCF, CpuInstruction.NOP.ic)
     }
 
     @Test
     fun dbgMem() {
         enable.value = true
-        memData.setN(Instruction.NOP.ic)
+        memData.setN(CpuInstruction.NOP.ic)
         clk.pulse()
 
         dbgMode.setN(0b10)
@@ -276,15 +276,15 @@ class CpuTest {
     @Test
     fun dbgInstruction() {
         enable.value = true
-        memData.setN(Instruction.NOP.ic)
+        memData.setN(CpuInstruction.NOP.ic)
         clk.pulse()
         assertEquals(1, readReg(ReadOnlyRegister.IP))
 
         dbgMode.setN(0b11)
-        dbgIn.setN(Instruction.SET(true, WritableRegister.A, 0x12).ic)
+        dbgIn.setN(CpuInstruction.SET(true, WritableRegister.A, 0x12).ic)
         clk.pulse()
         clk.pulse()
-        dbgIn.setN(Instruction.SET(false, WritableRegister.A, 0x34).ic)
+        dbgIn.setN(CpuInstruction.SET(false, WritableRegister.A, 0x34).ic)
         clk.pulse()
         clk.pulse()
 
@@ -298,7 +298,7 @@ class CpuTest {
     @Test
     fun rstTest() {
         enable.value = true
-        memData.setN(Instruction.NOP.ic)
+        memData.setN(CpuInstruction.NOP.ic)
 
         repeat(5) {
             clk.pulse()

@@ -50,12 +50,12 @@ fun link(entryPoint: String, vararg objs: ObjectFile): LinkerOutput {
     val entryPointOffset = requireNotNull(callTable[entryPoint]) { "Undefined entry point: $entryPoint" }.toInt()
 
     val initInstructions = listOf(
-        Instruction.SET(true, WritableRegister.P, 0x00),
-        Instruction.SET(false, WritableRegister.P, 2 + entryPointOffset),  // IP + 2 -> bytecode start
-        Instruction.MOV(ReadOnlyRegister.IP, WritableRegister.Q),
-        Instruction.ALU(false, WritableRegister.P, WritableRegister.Q, AluOperation.A_PLUS_B),  // <- IP
-        Instruction.CMP(true, JumpCondition(0b111), WritableRegister.P)
-    ).map(Instruction::code)
+        CpuInstruction.SET(true, WritableRegister.P, 0x00),
+        CpuInstruction.SET(false, WritableRegister.P, 2 + entryPointOffset),  // IP + 2 -> bytecode start
+        CpuInstruction.MOV(ReadOnlyRegister.IP, WritableRegister.Q),
+        CpuInstruction.ALU(false, WritableRegister.P, WritableRegister.Q, AluOperation.A_PLUS_B),  // <- IP
+        CpuInstruction.CMP(true, JumpCondition(0b111), WritableRegister.P)
+    ).map(CpuInstruction::code)
 
     return LinkerOutput(
         initInstructions + bytecode,

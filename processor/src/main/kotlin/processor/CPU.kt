@@ -2,7 +2,7 @@
 
 package processor
 
-import common.Instruction.NOP.code as NOP_CODE
+import common.CpuInstruction.NOP.code as NOP_CODE
 import hardware.*
 import hdl.*
 import processor.components.*

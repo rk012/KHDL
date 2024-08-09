@@ -134,7 +134,7 @@ class ComponentTest {
     private val OutputBus.n get() = peekInt()
 
     private fun testInstruction(
-        instruction: Instruction, src: BusSource,
+        instruction: CpuInstruction, src: BusSource,
         opFlags: OutputBus, ab: OutputPin, cond: OutputBus,
         xReg: OutputBus, regA: OutputBus, regB: OutputBus,
         aluOp: OutputBus, iVal: OutputBus
@@ -142,39 +142,39 @@ class ComponentTest {
         src.setN(instruction.code.toInt())
 
         when (instruction) {
-            Instruction.HLT -> assertEquals(0b10000000, opFlags.n)
-            Instruction.NOP -> assertEquals(0b01000000, opFlags.n)
-            is Instruction.MOV -> {
+            CpuInstruction.HLT -> assertEquals(0b10000000, opFlags.n)
+            CpuInstruction.NOP -> assertEquals(0b01000000, opFlags.n)
+            is CpuInstruction.MOV -> {
                 assertEquals(0b00100000, opFlags.n)
                 assertEquals(instruction.src.xCode, xReg.n)
                 assertEquals(instruction.dest.code, regB.n)
             }
-            is Instruction.SET -> {
+            is CpuInstruction.SET -> {
                 assertEquals(0b00010000, opFlags.n)
                 assertEquals(instruction.sideFlag, ab.peek())
                 assertEquals(instruction.dest.code, regA.n)
                 assertEquals(instruction.value, iVal.n)
             }
-            is Instruction.CMP -> {
+            is CpuInstruction.CMP -> {
                 assertEquals(0b00001000, opFlags.n)
                 assertEquals(instruction.jmp, ab.peek())
                 assertEquals(instruction.cond, JumpCondition(cond.n))
                 assertEquals(instruction.reg.code, regB.n)
             }
-            is Instruction.ALU -> {
+            is CpuInstruction.ALU -> {
                 assertEquals(0b00000100, opFlags.n)
                 assertEquals(instruction.q, ab.peek())
                 assertEquals(instruction.a.code, regA.n)
                 assertEquals(instruction.b.code, regB.n)
                 assertEquals(instruction.op.opcode, aluOp.n)
             }
-            is Instruction.MEM -> {
+            is CpuInstruction.MEM -> {
                 assertEquals(0b00000010, opFlags.n)
                 assertEquals(instruction.w, ab.peek())
                 assertEquals(instruction.addr.code, regA.n)
                 assertEquals(instruction.d.code, regB.n)
             }
-            is Instruction.IO -> {
+            is CpuInstruction.IO -> {
                 assertEquals(0b00000001, opFlags.n)
                 assertEquals(instruction.w, ab.peek())
                 assertEquals(instruction.addr.code, regA.n)
@@ -186,16 +186,16 @@ class ComponentTest {
     @Test
     fun instructionDecoder() {
         val instructions = listOf(
-            Instruction.NOP,
-            Instruction.HLT,
-            Instruction.MOV(ReadOnlyRegister.IP, WritableRegister.A),
-            Instruction.MOV(WritableRegister.B, WritableRegister.C),
-            Instruction.SET(true, WritableRegister.B,254),
-            Instruction.CMP(false, JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
-            Instruction.CMP(true, JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
-            Instruction.ALU(false, WritableRegister.D, WritableRegister.Q, AluOperation.OR),
-            Instruction.MEM(true, WritableRegister.SP, WritableRegister.P),
-            Instruction.IO(true, WritableRegister.A, WritableRegister.B)
+            CpuInstruction.NOP,
+            CpuInstruction.HLT,
+            CpuInstruction.MOV(ReadOnlyRegister.IP, WritableRegister.A),
+            CpuInstruction.MOV(WritableRegister.B, WritableRegister.C),
+            CpuInstruction.SET(true, WritableRegister.B,254),
+            CpuInstruction.CMP(false, JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
+            CpuInstruction.CMP(true, JumpCondition(eq=false, lt=true, gt=true), WritableRegister.C),
+            CpuInstruction.ALU(false, WritableRegister.D, WritableRegister.Q, AluOperation.OR),
+            CpuInstruction.MEM(true, WritableRegister.SP, WritableRegister.P),
+            CpuInstruction.IO(true, WritableRegister.A, WritableRegister.B)
         )
 
         val chip = InstructionDecoder()

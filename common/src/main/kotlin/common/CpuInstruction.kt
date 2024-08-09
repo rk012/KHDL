@@ -1,10 +1,10 @@
 package common
 
-sealed class Instruction(opcode: Int, vararg masks: Int) {
+sealed class CpuInstruction(opcode: Int, vararg masks: Int) {
     companion object {
         private fun boolMask(flag: Boolean) = (if (flag) 1 else 0) shl 12
 
-        fun parse(code: Int): Instruction {
+        fun parse(code: Int): CpuInstruction {
             val op = (code shr 13) and 0b111
             val flag = ((code shr 12) and 1) != 0
             val xReg = (code shr 9) and 0b1111
@@ -39,24 +39,24 @@ sealed class Instruction(opcode: Int, vararg masks: Int) {
 
     val code = ((opcode shl 13) or if (masks.isNotEmpty()) masks.reduce(Int::or) else 0).toShort()
 
-    data object HLT : Instruction(0b000)
-    data object NOP : Instruction(0b001)
+    data object HLT : CpuInstruction(0b000)
+    data object NOP : CpuInstruction(0b001)
 
     data class MOV(val src: Register, val dest: WritableRegister) :
-        Instruction(0b010, src.xCode shl 9, dest.code shl 6)
+        CpuInstruction(0b010, src.xCode shl 9, dest.code shl 6)
 
     data class SET(val sideFlag: Boolean, val dest: WritableRegister, val value: Int) :
-        Instruction(0b011, boolMask(sideFlag), dest.code shl 9, value)
+        CpuInstruction(0b011, boolMask(sideFlag), dest.code shl 9, value)
 
     data class CMP(val jmp: Boolean, val cond: JumpCondition, val reg: WritableRegister) :
-        Instruction(0b100, boolMask(jmp), cond.mask, reg.code shl 6)
+        CpuInstruction(0b100, boolMask(jmp), cond.mask, reg.code shl 6)
 
     data class ALU(val q: Boolean, val a: WritableRegister, val b: WritableRegister, val op: AluOperation) :
-        Instruction(0b101, boolMask(q), a.code shl 9, b.code shl 6, op.mask)
+        CpuInstruction(0b101, boolMask(q), a.code shl 9, b.code shl 6, op.mask)
 
     data class MEM(val w: Boolean, val addr: WritableRegister, val d: WritableRegister) :
-        Instruction(0b110, boolMask(w), addr.code shl 9, d.code shl 6)
+        CpuInstruction(0b110, boolMask(w), addr.code shl 9, d.code shl 6)
 
     data class IO(val w: Boolean, val addr: WritableRegister, val d: WritableRegister) :
-        Instruction(0b111, boolMask(w), addr.code shl 9, d.code shl 6)
+        CpuInstruction(0b111, boolMask(w), addr.code shl 9, d.code shl 6)
 }

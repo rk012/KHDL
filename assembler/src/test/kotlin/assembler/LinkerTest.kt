@@ -7,12 +7,12 @@ import kotlin.test.assertEquals
 
 class LinkerTest {
     private fun resolveIpRelAddr(offset: Int) = arrayOf(  // <- IP - 4
-        Instruction.SET(true, WritableRegister.P, 0x00),
-        Instruction.SET(false, WritableRegister.P, offset + 4),
-        Instruction.MOV(ReadOnlyRegister.IP, WritableRegister.Q),
-        Instruction.ALU(false, WritableRegister.Q, WritableRegister.P, AluOperation.A_MINUS_B), // <- IP
-        Instruction.MEM(false, WritableRegister.P, WritableRegister.Q),  // P+Q -> dest
-        Instruction.ALU(false, WritableRegister.P, WritableRegister.Q, AluOperation.A_PLUS_B),  // P -> dest
+        CpuInstruction.SET(true, WritableRegister.P, 0x00),
+        CpuInstruction.SET(false, WritableRegister.P, offset + 4),
+        CpuInstruction.MOV(ReadOnlyRegister.IP, WritableRegister.Q),
+        CpuInstruction.ALU(false, WritableRegister.Q, WritableRegister.P, AluOperation.A_MINUS_B), // <- IP
+        CpuInstruction.MEM(false, WritableRegister.P, WritableRegister.Q),  // P+Q -> dest
+        CpuInstruction.ALU(false, WritableRegister.P, WritableRegister.Q, AluOperation.A_PLUS_B),  // P -> dest
     )
 
     @Test
@@ -23,13 +23,13 @@ class LinkerTest {
 
             listOf(
                 // c
-                Instruction.ALU(false, WritableRegister.A, WritableRegister.B, AluOperation.A_PLUS_B), // <- 0
-                Instruction.HLT,
+                CpuInstruction.ALU(false, WritableRegister.A, WritableRegister.B, AluOperation.A_PLUS_B), // <- 0
+                CpuInstruction.HLT,
 
                 // a
                 *resolveIpRelAddr(2),
-                Instruction.CMP(true, JumpCondition(0b111), WritableRegister.P)
-            ).map(Instruction::code)
+                CpuInstruction.CMP(true, JumpCondition(0b111), WritableRegister.P)
+            ).map(CpuInstruction::code)
         )
 
         val b = ObjectFile(
@@ -38,13 +38,13 @@ class LinkerTest {
 
             listOf(
                 // b
-                Instruction.SET(true, WritableRegister.A, 0x01),
-                Instruction.SET(false, WritableRegister.A, 0x20),
+                CpuInstruction.SET(true, WritableRegister.A, 0x01),
+                CpuInstruction.SET(false, WritableRegister.A, 0x20),
                 *resolveIpRelAddr(3),  // P -> const, len=6
-                Instruction.MEM(false, WritableRegister.P, WritableRegister.B),
+                CpuInstruction.MEM(false, WritableRegister.P, WritableRegister.B),
                 *resolveIpRelAddr(9),  // P -> c
-                Instruction.CMP(true, JumpCondition(0b111), WritableRegister.P)
-            ).map(Instruction::code)
+                CpuInstruction.CMP(true, JumpCondition(0b111), WritableRegister.P)
+            ).map(CpuInstruction::code)
         )
 
         val const = ObjectFile(

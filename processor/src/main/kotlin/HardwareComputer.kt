@@ -105,8 +105,8 @@ class HardwareComputer(override val rom: Bytecode) : Computer {
         return res.s
     }
 
-    override fun runInstructions(instructions: List<Instruction>) {
-        fun dbg(ins: List<Instruction>) {
+    override fun runInstructions(instructions: List<CpuInstruction>) {
+        fun dbg(ins: List<CpuInstruction>) {
             dbgMode.setN(0b11)
             ins.forEach {
                 dbgData.setN(it.code.toInt())
@@ -122,11 +122,11 @@ class HardwareComputer(override val rom: Bytecode) : Computer {
         val q = debugRegister(WritableRegister.Q)
 
         val cleanup = listOf(
-            Instruction.SET(true, WritableRegister.Q, ip shr 8),
-            Instruction.SET(false, WritableRegister.Q, ip and 0xFF),
-            Instruction.CMP(true, JumpCondition(0b111), WritableRegister.Q),
-            Instruction.SET(true, WritableRegister.Q, q.toInt() shr 8),
-            Instruction.SET(false, WritableRegister.Q, q.toInt() and 0xFF),
+            CpuInstruction.SET(true, WritableRegister.Q, ip shr 8),
+            CpuInstruction.SET(false, WritableRegister.Q, ip and 0xFF),
+            CpuInstruction.CMP(true, JumpCondition(0b111), WritableRegister.Q),
+            CpuInstruction.SET(true, WritableRegister.Q, q.toInt() shr 8),
+            CpuInstruction.SET(false, WritableRegister.Q, q.toInt() and 0xFF),
         )
 
         dbg(cleanup.dropLast(1))
