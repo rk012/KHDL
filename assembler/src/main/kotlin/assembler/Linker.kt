@@ -11,13 +11,13 @@ data class ObjectFile(
 }
 
 
-data class LinkerOutput(
+data class Executable(
     val bytecode: Bytecode,
     val callTable: Map<String, UShort>
 )
 
 
-fun link(entryPoint: String, vararg objs: ObjectFile): LinkerOutput {
+fun link(entryPoint: String?, vararg objs: ObjectFile): Executable {
     val offsets = (objs zip objs.runningFold(0) { acc, obj -> acc + obj.size }).toMap()
     val callTable = mutableMapOf<String, UShort>()
 
@@ -47,17 +47,21 @@ fun link(entryPoint: String, vararg objs: ObjectFile): LinkerOutput {
         } + obj.bytecode
     }
 
-    val entryPointOffset = requireNotNull(callTable[entryPoint]) { "Undefined entry point: $entryPoint" }.toInt()
+    val entryPointOffset = if (entryPoint != null) {
+        requireNotNull(callTable[entryPoint]) { "Undefined entry point: $entryPoint" }.toInt()
+    } else {
+        0
+    }
 
-    val initInstructions = listOf(
+    val initInstructions = if (entryPointOffset != 0) listOf(
         CpuInstruction.SET(true, WritableRegister.P, 0x00),
         CpuInstruction.SET(false, WritableRegister.P, 2 + entryPointOffset),  // IP + 2 -> bytecode start
         CpuInstruction.MOV(ReadOnlyRegister.IP, WritableRegister.Q),
         CpuInstruction.ALU(false, WritableRegister.P, WritableRegister.Q, AluOperation.A_PLUS_B),  // <- IP
         CpuInstruction.CMP(true, JumpCondition(0b111), WritableRegister.P)
-    ).map(CpuInstruction::code)
+    ).map(CpuInstruction::code) else emptyList()
 
-    return LinkerOutput(
+    return Executable(
         initInstructions + bytecode,
         callTable.mapValues { (it.value.toInt() + initInstructions.size).toUShort() }
     )
