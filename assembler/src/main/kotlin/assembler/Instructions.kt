@@ -13,23 +13,22 @@ sealed interface AsmLine : AsmCommand {
 
 data class Label(val key: Any) : AsmLine
 
-interface AsmInstruction : AsmLine {
+interface InstructionBlock : AsmLine {
     val size: Int
     fun eval(context: AsmEvalContext): Bytecode
 }
 
-inline fun AsmInstruction(size: Int, crossinline evalFn: (AsmEvalContext) -> Bytecode) = object : AsmInstruction {
+inline fun InstructionBlock(size: Int, crossinline evalFn: (AsmEvalContext) -> Bytecode) = object : InstructionBlock {
     override val size = size
     override fun eval(context: AsmEvalContext) = evalFn(context)
 }
 
-fun composeInstructions(vararg instructions: AsmInstruction) = object : AsmInstruction {
-    override val size = instructions.sumOf { it.size }
-    override fun eval(context: AsmEvalContext) = instructions.flatMap { it.eval(context) }
+fun composeCommands(vararg commands: AsmCommand) = AsmCommand { cfg ->
+    commands.flatMap { it.resolve(cfg) }
 }
 
 fun List<AsmCommand>.applyConfig(config: AsmConfig) = flatMap { it.resolve(config) }
 
-fun cpuInstructions(vararg instructions: CpuInstruction) = AsmInstruction(instructions.size) { _ ->
+fun cpuInstructions(vararg instructions: CpuInstruction) = InstructionBlock(instructions.size) { _ ->
     instructions.map(CpuInstruction::code)
 }

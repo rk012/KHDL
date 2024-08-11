@@ -1,7 +1,7 @@
 package assembler.instructions
 
 import assembler.AsmCommand
-import assembler.AsmInstruction
+import assembler.InstructionBlock
 import assembler.Macro
 import assembler.cpuInstructions
 import common.*
@@ -15,7 +15,7 @@ fun mov(p: Pair<Register, WritableRegister>) = mov(p.first, p.second)
 
 fun set(reg: WritableRegister, value: Macro<Int>) = AsmCommand { cfg ->
     listOf(
-        AsmInstruction(2) { ctx ->
+        InstructionBlock(2) { ctx ->
             listOf(
                 CpuInstruction.SET(true, reg, value.eval(cfg, ctx) shr 8),
                 CpuInstruction.SET(false, reg, value.eval(cfg, ctx) and 0xFF)

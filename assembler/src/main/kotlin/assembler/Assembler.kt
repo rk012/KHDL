@@ -24,7 +24,7 @@ fun assemble(config: AsmConfig, commands: List<AsmCommand>): ObjectFile {
                     labels[line.key] = offset
                     null
                 }
-                is AsmInstruction -> {
+                is InstructionBlock -> {
                     offset += line.size
                     line
                 }
