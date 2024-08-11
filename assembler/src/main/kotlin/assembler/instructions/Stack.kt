@@ -32,6 +32,37 @@ fun pop(dest: WritableRegister) = composeCommands(
 ).also { require(dest != WritableRegister.P && dest != WritableRegister.SP) }
 
 
+fun lea(offset: Int) = composeCommands(
+    set(WritableRegister.P, offset),
+    aluP(WritableRegister.BP, WritableRegister.P, AluOperation.A_MINUS_B)
+)
+
+fun lea(offset: Int, dest: WritableRegister) =
+    if (dest == WritableRegister.P) lea(offset)
+    else composeCommands(
+        lea(offset),
+        mov(WritableRegister.P to dest)
+    )
+
+fun getVar(offset: Int, dest: WritableRegister) = composeCommands(
+    lea(offset),
+    memRead(WritableRegister.P, dest)
+)
+
+fun setVar(offset: Int, src: WritableRegister): AsmCommand {
+    require(src != WritableRegister.P)
+
+    return composeCommands(
+        lea(offset),
+        memWrite(WritableRegister.P, src)
+    )
+}
+
+fun setVar(offset: Int, value: Int) = composeCommands(
+    set(WritableRegister.Q, value),
+    setVar(offset, WritableRegister.Q)
+)
+
 fun callExt(fn: String) = enter(fn, false)
 fun callLocal(fn: String) = enter(fn, true)
 
