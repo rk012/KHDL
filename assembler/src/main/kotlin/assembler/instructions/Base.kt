@@ -17,7 +17,7 @@ fun set(reg: WritableRegister, value: Macro<Int>) = AsmCommand { cfg ->
     listOf(
         InstructionBlock(2) { ctx ->
             listOf(
-                CpuInstruction.SET(true, reg, value.eval(cfg, ctx) shr 8),
+                CpuInstruction.SET(true, reg, (value.eval(cfg, ctx) shr 8) and 0xFF),
                 CpuInstruction.SET(false, reg, value.eval(cfg, ctx) and 0xFF)
             ).map(CpuInstruction::code)
         }
@@ -25,7 +25,7 @@ fun set(reg: WritableRegister, value: Macro<Int>) = AsmCommand { cfg ->
 }
 
 fun set(reg: WritableRegister, value: Int) = cpuInstructions(
-    CpuInstruction.SET(true, reg, value shr 8),
+    CpuInstruction.SET(true, reg, (value shr 8) and 0xFF),
     CpuInstruction.SET(false, reg, value and 0xFF)
 )
 

@@ -3,6 +3,8 @@ package assembler
 import common.Bytecode
 import common.CpuInstruction
 
+typealias Assembly = List<AsmCommand>
+
 fun interface AsmCommand {
     fun resolve(config: AsmConfig): List<AsmLine>
 }
@@ -27,8 +29,10 @@ fun composeCommands(vararg commands: AsmCommand) = AsmCommand { cfg ->
     commands.flatMap { it.resolve(cfg) }
 }
 
-fun List<AsmCommand>.applyConfig(config: AsmConfig) = flatMap { it.resolve(config) }
+fun Assembly.applyConfig(config: AsmConfig) = flatMap { it.resolve(config) }
 
 fun cpuInstructions(vararg instructions: CpuInstruction) = InstructionBlock(instructions.size) { _ ->
     instructions.map(CpuInstruction::code)
 }
+
+fun rawData(bytecode: Bytecode) = InstructionBlock(bytecode.size) { bytecode }

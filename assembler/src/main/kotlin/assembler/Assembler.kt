@@ -11,7 +11,7 @@ data class AsmEvalContext(val labels: Map<Any, Int>) {
     operator fun get(key: Any) = requireNotNull(labels[key]) { "Undefined label: $key" }
 }
 
-fun assemble(config: AsmConfig, commands: List<AsmCommand>): ObjectFile {
+fun assemble(config: AsmConfig, commands: Assembly): ObjectFile {
     if (config.directAddresses) check(config.imports.isEmpty()) { "Imports must use relative addresses" }
 
     var offset = config.offset
@@ -44,7 +44,7 @@ fun assemble(config: AsmConfig, commands: List<AsmCommand>): ObjectFile {
         config.imports,
         config.exportLabels.mapValues { (_, v) ->
             val pos = requireNotNull(labels[v]) { "Undefined exported label: $v" }
-            (pos - offset).toUShort()
+            (pos - config.offset).toUShort()
         },
         bytecode
     )
