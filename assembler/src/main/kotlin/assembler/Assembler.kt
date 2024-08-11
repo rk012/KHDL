@@ -11,22 +11,23 @@ data class AsmEvalContext(val labels: Map<Any, Int>) {
     operator fun get(key: Any) = requireNotNull(labels[key]) { "Undefined label: $key" }
 }
 
-fun assemble(config: AsmConfig, lines: List<AsmLine>): ObjectFile {
+fun assemble(config: AsmConfig, commands: List<AsmCommand>): ObjectFile {
     if (config.directAddresses) check(config.imports.isEmpty()) { "Imports must use relative addresses" }
 
     var offset = config.offset
     val labels = mutableMapOf<Any, Int>()
 
-    val instructions = lines.mapNotNull { line ->
-        when (line) {
-            is Label -> {
-                labels[line.key] = offset
-                null
-            }
-            is Command -> {
-                val instruction = line.resolve(config)
-                offset += instruction.size
-                instruction
+    val instructions = commands.flatMap { cmd ->
+        cmd.resolve(config).mapNotNull { line ->
+            when (line) {
+                is Label -> {
+                    labels[line.key] = offset
+                    null
+                }
+                is AsmInstruction -> {
+                    offset += line.size
+                    line
+                }
             }
         }
     }

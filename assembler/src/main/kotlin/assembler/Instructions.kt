@@ -1,8 +1,19 @@
 package assembler
 
 import common.Bytecode
+import common.CpuInstruction
 
-interface AsmInstruction {
+fun interface AsmCommand {
+    fun resolve(config: AsmConfig): List<AsmLine>
+}
+
+sealed interface AsmLine : AsmCommand {
+    override fun resolve(config: AsmConfig) = listOf(this)
+}
+
+data class Label(val key: Any) : AsmLine
+
+interface AsmInstruction : AsmLine {
     val size: Int
     fun eval(context: AsmEvalContext): Bytecode
 }
@@ -12,22 +23,13 @@ inline fun AsmInstruction(size: Int, crossinline evalFn: (AsmEvalContext) -> Byt
     override fun eval(context: AsmEvalContext) = evalFn(context)
 }
 
-sealed interface AsmLine
-
-data class Label(val key: Any) : AsmLine
-fun interface Command : AsmLine {
-    fun resolve(config: AsmConfig): AsmInstruction
+fun composeInstructions(vararg instructions: AsmInstruction) = object : AsmInstruction {
+    override val size = instructions.sumOf { it.size }
+    override fun eval(context: AsmEvalContext) = instructions.flatMap { it.eval(context) }
 }
 
+fun List<AsmCommand>.applyConfig(config: AsmConfig) = flatMap { it.resolve(config) }
 
-fun compose(vararg commands: Command): Command = Command { cfg ->
-    val instructions = commands.map { it.resolve(cfg) }
-    AsmInstruction(instructions.sumOf { it.size }) { ctx ->
-        instructions.flatMap { it.eval(ctx) }
-    }
-}
-
-
-fun interface Macro<out T> {
-    fun eval(config: AsmConfig, context: AsmEvalContext): T
+fun cpuInstructions(vararg instructions: CpuInstruction) = AsmInstruction(instructions.size) { _ ->
+    instructions.map(CpuInstruction::code)
 }
