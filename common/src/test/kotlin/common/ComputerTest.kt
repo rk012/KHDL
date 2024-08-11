@@ -1,28 +1,11 @@
 package common
 
+import common.testing.IOListener
 import s
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 interface ComputerTest {
-    private class IOListener(private val controller: IOController) : IODevice {
-        override val inputPorts = setOf<UShort>(0u)
-        override val outputPorts = emptySet<UShort>()
-
-        private val _out = mutableListOf<Short>()
-        val output: List<Short> get() = _out
-
-        private var last = 0.s
-
-        override fun update() {
-            val n = controller[0u]
-            if (n == last) return
-
-            last = n
-            _out.add(n)
-        }
-    }
-
     fun new(rom: Bytecode): Computer
 
     @Test
