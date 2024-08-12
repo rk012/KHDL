@@ -14,6 +14,11 @@ class AsmBuilderScope internal constructor() {
     fun addAll(commands: Assembly) {
         this.commands.addAll(commands)
     }
+
+    operator fun String.invoke(vararg command: AsmCommand) {
+        +this@invoke
+        addAll(command.toList())
+    }
 }
 
 fun asm(block: AsmBuilderScope.() -> Unit): Assembly {

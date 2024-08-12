@@ -49,14 +49,13 @@ class StackTest {
             +mov(WritableRegister.A to WritableRegister.C)
             +hlt()
 
-            +"add"
-            +lea(-2)
-            +memRead(WritableRegister.P, WritableRegister.B)
-            +lea(-3)
-            +memRead(WritableRegister.P, WritableRegister.A)
-            +aluP(WritableRegister.A, WritableRegister.B, AluOperation.A_PLUS_B)
-            +mov(WritableRegister.P, WritableRegister.A)
-            +ret()
+            "add" (
+                getVar(-2, WritableRegister.B),
+                getVar(-3, WritableRegister.A),
+                aluP(WritableRegister.A, WritableRegister.B, AluOperation.A_PLUS_B),
+                mov(WritableRegister.P, WritableRegister.A),
+                ret(),
+            )
         }
 
         val vm = createVm(asm)
@@ -75,23 +74,24 @@ class StackTest {
             +localRef("str_data")
             +mov(WritableRegister.P to WritableRegister.A)
 
-            +"loop"
-            +memRead(WritableRegister.A, WritableRegister.B)
-            +localRef("loop_end")
-            +aluQ(WritableRegister.B, WritableRegister.B, AluOperation.A)
-            +je(WritableRegister.P) // while b != 0 <=> jmp if b==0
+            "loop" (
+                memRead(WritableRegister.A, WritableRegister.B),
+                localRef("loop_end"),
+                aluQ(WritableRegister.B, WritableRegister.B, AluOperation.A),
+                je(WritableRegister.P), // while b != 0 <=> jmp if b==0
 
-            +push(WritableRegister.A)  // saved
-            +push(WritableRegister.B)  // char arg
-            +callLocal("print")
-            +pop(WritableRegister.Q) // unused arg
-            +pop(WritableRegister.A) // load saved addr
+                push(WritableRegister.A),  // saved
+                push(WritableRegister.B),  // char arg
+                callLocal("print"),
+                pop(WritableRegister.Q), // unused arg
+                pop(WritableRegister.A), // load saved addr
 
-            +aluP(WritableRegister.A, WritableRegister.A, AluOperation.A_PLUS_1)
-            +mov(WritableRegister.P to WritableRegister.A) // a++
+                aluP(WritableRegister.A, WritableRegister.A, AluOperation.A_PLUS_1),
+                mov(WritableRegister.P to WritableRegister.A), // a++
 
-            +localRef("loop")
-            +jmp(WritableRegister.P)
+                localRef("loop"),
+                jmp(WritableRegister.P),
+            )
 
             +"loop_end"
             +hlt()
@@ -99,14 +99,14 @@ class StackTest {
             +"str_data"
             +rawData(str.map { it.code.toShort() } + 0x00)
 
-            +"print"
-            +set(WritableRegister.A, 0)
-            +lea(-2)
-            +memRead(WritableRegister.P, WritableRegister.B)
-            +ioWrite(WritableRegister.A, WritableRegister.B)
-            // Print 0x00 to ensure IOListener reads duplicate consecutive chars
-            +ioWrite(WritableRegister.A, WritableRegister.A)
-            +ret()
+            "print" (
+                set(WritableRegister.A, 0),
+                getVar(-2, WritableRegister.B),
+                ioWrite(WritableRegister.A, WritableRegister.B),
+                // Print 0x00 to ensure IOListener reads duplicate consecutive chars
+                ioWrite(WritableRegister.A, WritableRegister.A),
+                ret(),
+            )
         }
 
         val vm = createVm(asm)
