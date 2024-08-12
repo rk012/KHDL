@@ -33,4 +33,6 @@ class SingleIntConst : IntProgramTest {
             )
         )
     ))
+
+    override val expectedReturn = 5
 }
