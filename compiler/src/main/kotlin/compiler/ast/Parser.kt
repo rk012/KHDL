@@ -67,7 +67,8 @@ class ParserScope internal constructor(private val tokens: TokenStream, private 
     suspend fun raise(message: String): Nothing = ParserResult.Failure(message).bind()
 
     suspend fun <T> Parser<T>.parse(): T = runParser(tokens, index).bind()
-    suspend fun <T> TokenStream.parseWith(parser: Parser<T>): T = parser.parse(this@parseWith).bind()
+    suspend fun <T> TokenStream.parseWith(parser: Parser<T>): T =
+        parser.parse(this@parseWith).flatMap { t, _ -> ParserResult.Success(t, 0) }.bind()
 
     fun peek() = tokens.getOrNull(index)
     suspend fun next() = AnyToken.parse()
