@@ -13,7 +13,6 @@ import common.WritableRegister
 import compiler.ast.SourceNode
 import compiler.tokens.Token
 import compiler.tokens.lexer
-import compiler.parser.parseTokens
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

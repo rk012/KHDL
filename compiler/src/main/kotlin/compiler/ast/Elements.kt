@@ -1,6 +1,5 @@
 package compiler.ast
 
-import compiler.parser.*
 import compiler.tokens.Token
 
 sealed interface Type {
@@ -33,8 +32,7 @@ data class Function(
         val returnType = Type.parse()
         val name = match<Token.Identifier>().value
 
-        match(Token.Symbol.OPEN_PAREN)
-        match(Token.Symbol.CLOSE_PAREN)
+        blockParser(Token.Symbol.OPEN_PAREN).parse()
 
         Function(returnType, name)
     })

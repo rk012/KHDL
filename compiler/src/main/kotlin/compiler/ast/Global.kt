@@ -1,8 +1,5 @@
 package compiler.ast
 
-import compiler.parser.Parser
-import compiler.parser.parser
-
 data class FunctionDeclaration(
     val function: Function,
     val body: List<Statement>

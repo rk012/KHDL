@@ -1,6 +1,5 @@
-package compiler.parser
+package compiler.ast
 
-import compiler.ast.SourceNode
 import compiler.tokens.Token
 import kotlin.coroutines.*
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
@@ -99,9 +98,3 @@ inline fun <reified T : Token> matchToken() = parser {
 
 suspend fun ParserScope.match(token: Token) = matchToken(token).parse()
 suspend inline fun <reified T : Token> ParserScope.match() = matchToken<T>().parse()
-
-
-fun parseTokens(tokens: List<Token>) = SourceNode.parse(tokens).fold(
-    onSuccess = { node, _ -> node },
-    onFailure = { error(it) }
-)
