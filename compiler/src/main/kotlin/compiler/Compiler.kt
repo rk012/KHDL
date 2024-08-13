@@ -7,12 +7,12 @@ import assembler.instructions.set
 import common.WritableRegister
 import compiler.ast.Expression
 import compiler.ast.Statement
-import compiler.ast.parse
 import compiler.tokens.Token
 import compiler.tokens.lexer
+import compiler.parser.parseTokens
 
 fun compileSource(sourceCode: String): Assembly {
-    val ast = parse(lexer(sourceCode))
+    val ast = parseTokens(lexer(sourceCode))
 
     return asm {
         ast.items.forEach { fn ->

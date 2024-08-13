@@ -11,9 +11,9 @@ import assembler.instructions.set
 import assembler.link
 import common.WritableRegister
 import compiler.ast.SourceNode
-import compiler.ast.parse
 import compiler.tokens.Token
 import compiler.tokens.lexer
+import compiler.parser.parseTokens
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -30,7 +30,7 @@ interface IntProgramTest {
 
     @Test
     fun ast() {
-        assertEquals(expectedTree, parse(lexer(sourceCode)))
+        assertEquals(expectedTree, parseTokens(lexer(sourceCode)))
     }
 
     @Test
