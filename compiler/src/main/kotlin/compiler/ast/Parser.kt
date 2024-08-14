@@ -38,12 +38,14 @@ object AnyToken : Parser<Token> {
 }
 
 fun <T> parseAny(vararg parsers: Parser<T>) = Parser { tokens, index ->
-    parsers.forEach {
-        val result = it.runParser(tokens, index)
-        if (result is ParserResult.Success) return@Parser result
+    val fails = parsers.map {
+        when (val result = it.runParser(tokens, index)) {
+            is ParserResult.Success -> return@Parser result
+            is ParserResult.Failure -> result.message
+        }
     }
 
-    ParserResult.Failure("No parser matched")
+    ParserResult.Failure("No parsers matched\n" + fails.joinToString("\n"))
 }
 
 @RestrictsSuspension

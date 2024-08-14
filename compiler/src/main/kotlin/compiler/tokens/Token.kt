@@ -19,6 +19,10 @@ sealed interface Token {
             MINUS('-'),
             TILDE('~'),
             BANG('!'),
+
+            PLUS('+'),
+            ASTERISK('*'),
+            DIV('/'),
         }
     }
 

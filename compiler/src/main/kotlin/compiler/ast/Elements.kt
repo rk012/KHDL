@@ -10,16 +10,14 @@ sealed interface Type {
     companion object : Parser<Type> by parser ({
         val id = match<Token.Identifier>()
 
-        Primitive.entries.find { it.name.lowercase() == id.value } ?: error("Unknown type: ${id.value}")
+        Primitive.entries.find { it.name.lowercase() == id.value } ?: raise("Unknown type: ${id.value}")
     })
 }
 
 sealed interface Expression {
     data class Literal<out T>(val literal: Token.Literal<T>) : Expression {
         companion object : Parser<Literal<*>> by parser({
-            Literal(match<Token.Literal.IntLiteral>()).also {
-                if (peek() != null) error("Expected end of expression")
-            }
+            Literal(match<Token.Literal.IntLiteral>())
         })
     }
 
@@ -29,23 +27,64 @@ sealed interface Expression {
         data class Negate(override val operand: Expression) : Unary
         data class LogicalNot(override val operand: Expression) : Unary
         data class BitwiseNot(override val operand: Expression) : Unary
-
-        companion object : Parser<Unary> by parser({
-            when (val token = next()) {
-                Token.Symbol.Operator.MINUS -> Negate(Expression.parse())
-                Token.Symbol.Operator.BANG -> LogicalNot(Expression.parse())
-                Token.Symbol.Operator.TILDE -> BitwiseNot(Expression.parse())
-                else -> error("Expected unary operator, got: $token")
-            }
-        })
     }
 
-    companion object : Parser<Expression> by parser({
-        parseAny(
-            Literal,
-            Unary
-        ).parse()
-    })
+    sealed interface Binary : Expression {
+        val a: Expression
+        val b: Expression
+
+        data class Add(override val a: Expression, override val b: Expression) : Binary
+        data class Subtract(override val a: Expression, override val b: Expression) : Binary
+        data class Multiply(override val a: Expression, override val b: Expression) : Binary
+        data class Divide(override val a: Expression, override val b: Expression) : Binary
+    }
+
+    companion object : Parser<Expression> {
+        private val unaryExpr: Parser<Expression> by lazy { parseAny(
+            parser {
+                blockParser(Token.Symbol.Separator.OPEN_PAREN).parse().parseWith(expr)
+            },
+            parser {
+                when (val token = next()) {
+                    Token.Symbol.Operator.MINUS -> Unary.Negate(unaryExpr.parse())
+                    Token.Symbol.Operator.BANG -> Unary.LogicalNot(unaryExpr.parse())
+                    Token.Symbol.Operator.TILDE -> Unary.BitwiseNot(unaryExpr.parse())
+                    else -> raise("Expected unary operator, got: $token")
+                }
+            },
+            Literal
+        ) }
+
+        private val multiplicativeExpr: Parser<Expression> = parser {
+            var root = unaryExpr.parse()
+
+            while (true) {
+                root = when (peek()) {
+                    Token.Symbol.Operator.ASTERISK -> Binary.Multiply(root, unaryExpr.parse())
+                    Token.Symbol.Operator.DIV -> Binary.Divide(root, unaryExpr.parse())
+                    else -> break
+                }
+            }
+
+            root
+        }
+
+        private val expr: Parser<Expression> = parser {
+            var root = multiplicativeExpr.parse()
+
+            while (true) {
+                root = when (peek()) {
+                    Token.Symbol.Operator.PLUS -> Binary.Add(root, multiplicativeExpr.parse())
+                    Token.Symbol.Operator.MINUS -> Binary.Subtract(root, multiplicativeExpr.parse())
+                    else -> break
+                }
+            }
+
+            root
+        }
+
+        override fun runParser(tokens: TokenStream, index: Int) = expr.runParser(tokens, index)
+    }
 }
 
 data class Function(

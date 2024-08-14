@@ -1,13 +1,12 @@
 package compiler
 
-import assembler.AsmBuilderScope
-import assembler.Assembly
-import assembler.asm
+import assembler.*
 import assembler.instructions.*
 import common.AluOperation
 import common.JumpCondition
 import common.WritableRegister
 import compiler.ast.Expression
+import compiler.ast.FunctionDeclaration
 import compiler.ast.SourceNode
 import compiler.ast.Statement
 import compiler.tokens.Token
@@ -18,6 +17,32 @@ fun parseTokens(tokens: List<Token>) = SourceNode.parse(tokens).fold(
     onFailure = { error(it) }
 )
 
+interface CompiledFunction {
+    val assembly: Assembly
+    val name: String
+}
+
+class CompilerContext {
+    private val loadedFunctions = mutableSetOf<CompiledFunction>()
+
+    fun addCompiled(fn: CompiledFunction) {
+        loadedFunctions.add(fn)
+    }
+
+    fun AsmBuilderScope.callCompiled(fn: CompiledFunction) {
+        addCompiled(fn)
+        +callLocal(fn.name)
+    }
+
+    fun compiledFunctions(): Assembly = asm {
+        loadedFunctions.forEach { fn ->
+            +fn.name
+            addAll(fn.assembly)
+        }
+    }
+}
+
+context(CompilerContext)
 fun AsmBuilderScope.eval(expr: Expression) {
     when (expr) {
         is Expression.Literal<*> -> +set(WritableRegister.A, (expr.literal as Token.Literal.IntLiteral).value)
@@ -40,24 +65,39 @@ fun AsmBuilderScope.eval(expr: Expression) {
             +aluP(WritableRegister.A, WritableRegister.A, op)
             +mov(WritableRegister.P to WritableRegister.A)
         }
+
+        is Expression.Binary -> {
+            TODO()
+        }
     }
 }
 
-fun compileSource(sourceCode: String): Assembly {
-    val ast = parseTokens(lexer(sourceCode))
+context(CompilerContext)
+fun compileFunction(fn: FunctionDeclaration) = object : CompiledFunction {
+    override val name = "__fn_${fn.function.name}"
 
-    return asm {
-        ast.items.forEach { fn ->
-            +"__fn_${fn.function.name}"
-
-            fn.body.forEach { stmt ->
-                when (stmt) {
-                    is Statement.Return -> {
-                        eval(stmt.expression)
-                        +ret()
-                    }
+    override val assembly = asm {
+        fn.body.forEach { stmt ->
+            when (stmt) {
+                is Statement.Return -> {
+                    eval(stmt.expression)
+                    +ret()
                 }
             }
         }
     }
+
+}
+
+fun compileSource(sourceCode: String): Assembly {
+    val ast = parseTokens(lexer(sourceCode))
+    val ctx = CompilerContext()
+
+    with(ctx) {
+        ast.items.forEach {
+            ctx.addCompiled(compileFunction(it))
+        }
+    }
+
+    return ctx.compiledFunctions()
 }
