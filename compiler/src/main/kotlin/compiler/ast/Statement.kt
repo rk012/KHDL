@@ -13,11 +13,11 @@ sealed interface Statement {
 }
 
 private val matchingSymbols = mapOf(
-    Token.Symbol.OPEN_BRACE to Token.Symbol.CLOSE_BRACE,
-    Token.Symbol.OPEN_PAREN to Token.Symbol.CLOSE_PAREN,
+    Token.Symbol.Separator.OPEN_BRACE to Token.Symbol.Separator.CLOSE_BRACE,
+    Token.Symbol.Separator.OPEN_PAREN to Token.Symbol.Separator.CLOSE_PAREN,
 )
 
-fun blockParser(blockType: Token.Symbol): Parser<List<Token>> {
+fun blockParser(blockType: Token.Symbol.Separator): Parser<List<Token>> {
     require(blockType in matchingSymbols.keys)
 
     return parser {
@@ -29,7 +29,7 @@ fun blockParser(blockType: Token.Symbol): Parser<List<Token>> {
         while (true) {
             val token = next()
 
-            if (token is Token.Symbol) {
+            if (token is Token.Symbol.Separator) {
                 if (token in matchingSymbols.keys) {
                     stack.add(matchingSymbols[token]!!)
                 }
@@ -51,10 +51,10 @@ fun blockParser(blockType: Token.Symbol): Parser<List<Token>> {
 
 val statementBlockParser = parser<List<Statement>> {
     val statements = mutableListOf<Statement>()
-    var remaining = blockParser(Token.Symbol.OPEN_BRACE).parse()
+    var remaining = blockParser(Token.Symbol.Separator.OPEN_BRACE).parse()
 
     while (remaining.isNotEmpty()) {
-        val line = remaining.takeWhile { it != Token.Symbol.SEMICOLON }
+        val line = remaining.takeWhile { it != Token.Symbol.Separator.SEMICOLON }
         remaining = remaining.drop(line.size + 1)
 
         if (line.isEmpty()) continue

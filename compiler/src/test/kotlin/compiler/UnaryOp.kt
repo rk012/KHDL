@@ -4,10 +4,10 @@ import compiler.ast.*
 import compiler.ast.Function
 import compiler.tokens.Token
 
-class SingleIntConst : IntProgramTest {
+class UnaryOp : IntProgramTest {
     override val sourceCode = """
         int main() {
-            return 5;
+            return !~-!0;
         }
     """.trimIndent()
 
@@ -19,7 +19,13 @@ class SingleIntConst : IntProgramTest {
         Token.Symbol.Separator.OPEN_BRACE,
 
         Token.Keyword.RETURN,
-        Token.Literal.IntLiteral(5),
+
+        Token.Symbol.Operator.BANG,
+        Token.Symbol.Operator.TILDE,
+        Token.Symbol.Operator.MINUS,
+        Token.Symbol.Operator.BANG,
+        Token.Literal.IntLiteral(0),
+
         Token.Symbol.Separator.SEMICOLON,
 
         Token.Symbol.Separator.CLOSE_BRACE,
@@ -29,10 +35,17 @@ class SingleIntConst : IntProgramTest {
         FunctionDeclaration(
             Function(Type.Primitive.INT, "main"),
             listOf(
-                Statement.Return(Expression.Literal(Token.Literal.IntLiteral(5)))
+                Statement.Return(
+                    Expression.Unary.LogicalNot(
+                    Expression.Unary.BitwiseNot(
+                    Expression.Unary.Negate(
+                    Expression.Unary.LogicalNot(
+                    Expression.Literal(Token.Literal.IntLiteral(0))
+
+                )))))
             )
         )
     ))
 
-    override val expectedReturn = 5
+    override val expectedReturn = 1
 }

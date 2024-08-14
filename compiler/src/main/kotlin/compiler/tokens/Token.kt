@@ -4,12 +4,22 @@ package compiler.tokens
 sealed interface Token {
     data class Identifier(val value: String) : Token
 
-    enum class Symbol(val c: Char) : Token {
-        OPEN_PAREN('('),
-        CLOSE_PAREN(')'),
-        OPEN_BRACE('{'),
-        CLOSE_BRACE('}'),
-        SEMICOLON(';'),
+    sealed interface Symbol : Token {
+        val c: Char
+
+        enum class Separator(override val c: Char) : Symbol {
+            OPEN_PAREN('('),
+            CLOSE_PAREN(')'),
+            OPEN_BRACE('{'),
+            CLOSE_BRACE('}'),
+            SEMICOLON(';'),
+        }
+
+        enum class Operator(override val c: Char) : Symbol {
+            MINUS('-'),
+            TILDE('~'),
+            BANG('!'),
+        }
     }
 
     enum class Keyword : Token {

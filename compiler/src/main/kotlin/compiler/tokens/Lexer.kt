@@ -28,7 +28,8 @@ fun lexer(src: String): List<Token> {
                 }
 
                 else -> {
-                    val symbol = Token.Symbol.entries.find { it.c == c } ?: error("Unable tokenize:\n$unparsed")
+                    val symbol = (Token.Symbol.Separator.entries + Token.Symbol.Operator.entries)
+                        .find { it.c == c } ?: error("Unable tokenize:\n$unparsed")
 
                     symbol to unparsed.drop(1)
                 }

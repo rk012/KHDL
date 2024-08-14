@@ -22,7 +22,7 @@ sealed interface ParserResult<out T> {
     }
 }
 
-fun interface Parser<T> {
+fun interface Parser<out T> {
     fun runParser(tokens: TokenStream, index: Int): ParserResult<T>
     fun parse(tokens: TokenStream): ParserResult<T> = runParser(tokens, 0)
 }
