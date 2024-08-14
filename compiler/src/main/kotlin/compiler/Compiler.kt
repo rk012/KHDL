@@ -54,12 +54,12 @@ object MultiplyFn : CompiledFunction {
         +getVar(-3, WritableRegister.A)
         +getVar(-2, WritableRegister.B)
 
-        +set(WritableRegister.Q, getLabel(l1))
-        +aluP(WritableRegister.A, WritableRegister.B, AluOperation.NEG_B)
-        +jle(WritableRegister.Q)
+        +localRef(l1)
+        +aluQ(WritableRegister.A, WritableRegister.B, AluOperation.NEG_B)
+        +jle(WritableRegister.P)
 
         // -b > 0 <-> b  < 0
-        +mov(WritableRegister.P to WritableRegister.B)
+        +mov(WritableRegister.Q to WritableRegister.B)
         +push(WritableRegister.A)
         +push(WritableRegister.B)
         +callLocal(name)
@@ -68,9 +68,9 @@ object MultiplyFn : CompiledFunction {
         +ret()
 
         +Label(l1)
-        +set(WritableRegister.Q, getLabel(l2))
-        +aluP(WritableRegister.A, WritableRegister.B, AluOperation.A_MINUS_B)
-        +jge(WritableRegister.Q)
+        +localRef(l2)
+        +aluQ(WritableRegister.A, WritableRegister.B, AluOperation.A_MINUS_B)
+        +jge(WritableRegister.P)
 
         // a < b
         +push(WritableRegister.B)
@@ -79,9 +79,9 @@ object MultiplyFn : CompiledFunction {
         +ret()
 
         +Label(l2)
-        +set(WritableRegister.Q, getLabel(l3))
-        +aluP(WritableRegister.A, WritableRegister.B, AluOperation.B)
-        +jne(WritableRegister.Q)
+        +localRef(l3)
+        +aluQ(WritableRegister.A, WritableRegister.B, AluOperation.B)
+        +jne(WritableRegister.P)
 
         // b == 0
         +set(WritableRegister.A, 0)
@@ -100,10 +100,10 @@ object MultiplyFn : CompiledFunction {
         +aluP(WritableRegister.A, WritableRegister.A, AluOperation.A_PLUS_B) // a << 1 = a+a
         +mov(WritableRegister.P to WritableRegister.A)
         +pop(WritableRegister.B)  // old b
-        +set(WritableRegister.Q, getLabel(l4))
-        +aluP(WritableRegister.B, WritableRegister.B, AluOperation.ONE)
-        +aluP(WritableRegister.B, WritableRegister.P, AluOperation.AND)
-        +je(WritableRegister.Q)
+        +localRef(l4)
+        +aluQ(WritableRegister.B, WritableRegister.B, AluOperation.ONE)
+        +aluQ(WritableRegister.B, WritableRegister.Q, AluOperation.AND)
+        +je(WritableRegister.P)
 
         // b & 1 != 0
         +pop(WritableRegister.B) // a = res, b = a

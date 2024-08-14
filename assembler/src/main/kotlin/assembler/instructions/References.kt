@@ -5,7 +5,7 @@ import common.AluOperation
 import common.ReadOnlyRegister
 import common.WritableRegister
 
-fun localRef(target: String) = AsmCommand { cfg ->
+fun localRef(target: Any) = AsmCommand { cfg ->
     if (cfg.directAddresses) return@AsmCommand set(WritableRegister.P, getLabel(target)).resolve(cfg)
 
     val ip = Any()
