@@ -59,11 +59,17 @@ sealed interface Expression {
             var root = unaryExpr.parse()
 
             while (true) {
-                root = when (peek()) {
-                    Token.Symbol.Operator.ASTERISK -> Binary.Multiply(root, unaryExpr.parse())
-                    Token.Symbol.Operator.DIV -> Binary.Divide(root, unaryExpr.parse())
-                    else -> break
-                }
+                root = parseAny(
+                    parser {
+                        match(Token.Symbol.Operator.ASTERISK)
+                        Binary.Multiply(root, unaryExpr.parse())
+                    },
+                    parser {
+                        match(Token.Symbol.Operator.DIV)
+                        Binary.Divide(root, unaryExpr.parse())
+                    },
+                    parser { null }
+                ).parse() ?: break
             }
 
             root
@@ -73,11 +79,17 @@ sealed interface Expression {
             var root = multiplicativeExpr.parse()
 
             while (true) {
-                root = when (peek()) {
-                    Token.Symbol.Operator.PLUS -> Binary.Add(root, multiplicativeExpr.parse())
-                    Token.Symbol.Operator.MINUS -> Binary.Subtract(root, multiplicativeExpr.parse())
-                    else -> break
-                }
+                root = parseAny(
+                    parser {
+                        match(Token.Symbol.Operator.PLUS)
+                        Binary.Add(root, multiplicativeExpr.parse())
+                    },
+                    parser {
+                        match(Token.Symbol.Operator.MINUS)
+                        Binary.Subtract(root, multiplicativeExpr.parse())
+                    },
+                    parser { null }
+                ).parse() ?: break
             }
 
             root

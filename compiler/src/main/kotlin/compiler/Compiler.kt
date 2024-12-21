@@ -4,7 +4,6 @@ import assembler.*
 import assembler.instructions.*
 import common.AluOperation
 import common.JumpCondition
-import common.WritableRegister
 import compiler.ast.Expression
 import compiler.ast.FunctionDeclaration
 import compiler.ast.SourceNode
@@ -22,52 +21,34 @@ interface CompiledFunction {
     val assembly: Assembly
 }
 
-class CompilerContext {
-    private val loadedFunctions = mutableSetOf<CompiledFunction>()
-
-    fun addCompiled(fn: CompiledFunction) {
-        loadedFunctions.add(fn)
-    }
-
-    fun AsmBuilderScope.callCompiled(fn: CompiledFunction) {
-        addCompiled(fn)
-        +callLocal(fn.name)
-    }
-
-    fun compiledFunctions(): Assembly = asm {
-        loadedFunctions.forEach { fn ->
-            +fn.name
-            addAll(fn.assembly)
-        }
-    }
-}
-
 context(CompilerContext)
-fun AsmBuilderScope.eval(expr: Expression) {
+fun AsmBuilderScope.eval(expr: Expression): Unit = with(registerStack) {
     when (expr) {
-        is Expression.Literal<*> -> +set(WritableRegister.A, (expr.literal as Token.Literal.IntLiteral).value)
+        is Expression.Literal<*> -> rpushLit((expr.literal as Token.Literal.IntLiteral).value)
 
         is Expression.Unary -> {
             eval(expr.operand)
 
-            val op = when (expr) {
-                is Expression.Unary.LogicalNot -> {
-                    +aluP(WritableRegister.A, WritableRegister.A, AluOperation.A)
-                    +cmp(JumpCondition(eq = true), WritableRegister.A)
+            when (expr) {
+                is Expression.Unary.LogicalNot -> uCmp(JumpCondition(eq = true))
 
-                    return
-                }
-
-                is Expression.Unary.BitwiseNot -> AluOperation.NOT_A
-                is Expression.Unary.Negate -> AluOperation.NEG_A
+                is Expression.Unary.BitwiseNot -> uOp(AluOperation.NOT_A)
+                is Expression.Unary.Negate -> uOp(AluOperation.NEG_A)
             }
-
-            +aluP(WritableRegister.A, WritableRegister.A, op)
-            +mov(WritableRegister.P to WritableRegister.A)
         }
 
         is Expression.Binary -> {
-            TODO()
+            val oldSize = rSize
+            eval(expr.a)
+            eval(expr.b)
+            check(rSize - oldSize == 2)
+
+            when (expr) {
+                is Expression.Binary.Add -> binOp(AluOperation.A_PLUS_B)
+                is Expression.Binary.Subtract -> binOp(AluOperation.A_MINUS_B)
+                is Expression.Binary.Divide -> TODO()
+                is Expression.Binary.Multiply -> TODO()
+            }
         }
     }
 }
@@ -80,7 +61,10 @@ fun compileFunction(fn: FunctionDeclaration) = object : CompiledFunction {
         fn.body.forEach { stmt ->
             when (stmt) {
                 is Statement.Return -> {
+                    require(registerStack.rSize == 0)
                     eval(stmt.expression)
+                    require(registerStack.rSize == 1)
+                    with(registerStack) { rpop() }
                     +ret()
                 }
             }
