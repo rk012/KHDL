@@ -48,6 +48,8 @@ fun <T> parseAny(vararg parsers: Parser<T>) = Parser { tokens, index ->
     ParserResult.Failure("No parsers matched\n" + fails.joinToString("\n"))
 }
 
+fun <T> parseAnyOrNull(vararg parsers: Parser<T>) = parseAny(*parsers, parser { null })
+
 @RestrictsSuspension
 class ParserScope internal constructor(private val tokens: TokenStream, private val startIndex: Int) {
     private var index = startIndex

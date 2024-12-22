@@ -35,6 +35,18 @@ class RegisterStack {
         private set
     private var sp = 3
 
+    val r0
+        get() = registers[sp]
+
+    val r1
+        get() = registers[(sp + 3) % 4]
+
+    val r2
+        get() = registers[(sp + 2) % 4]
+
+    val r3
+        get() = registers[(sp + 1) % 4]
+
     fun AsmBuilderScope.rpop() {
         require(rSize > 0)
         if (rSize > 4) +pop(registers[sp])

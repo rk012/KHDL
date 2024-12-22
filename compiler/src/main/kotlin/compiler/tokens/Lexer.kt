@@ -1,11 +1,14 @@
 package compiler.tokens
 
+import kotlin.math.min
+
 fun lexer(src: String): List<Token> {
     var unparsed = src
     val tokens = mutableListOf<Token>()
 
     while (unparsed.isNotBlank()) {
-        val c = unparsed.first()
+        val s = unparsed.substring(0..<min(unparsed.length, 2))
+        val c = s[0]
 
         val (token: Token?, remaining: String) = run {
             when {
@@ -29,9 +32,9 @@ fun lexer(src: String): List<Token> {
 
                 else -> {
                     val symbol = (Token.Symbol.Separator.entries + Token.Symbol.Operator.entries)
-                        .find { it.c == c } ?: error("Unable tokenize:\n$unparsed")
+                        .firstOrNull { s.startsWith(it.s) } ?: error("Unable tokenize:\n$unparsed")
 
-                    symbol to unparsed.drop(1)
+                    symbol to unparsed.drop(symbol.s.length)
                 }
             }
         }

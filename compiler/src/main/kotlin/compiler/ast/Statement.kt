@@ -36,7 +36,7 @@ fun blockParser(blockType: Token.Symbol.Separator): Parser<List<Token>> {
 
                 if (token in matchingSymbols.values) {
                     if (stack.isEmpty() || stack.removeLast() != token) {
-                        raise("Mismatched symbol: ${token.c}")
+                        raise("Mismatched symbol: ${token.s}")
                     }
                 }
             }

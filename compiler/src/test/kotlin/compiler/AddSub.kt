@@ -4,7 +4,7 @@ import compiler.ast.*
 import compiler.ast.Function
 import compiler.tokens.Token
 
-class BinaryOp : IntProgramTest {
+class AddSub : IntProgramTest {
     // TODO add mult/div test here
     override val sourceCode = """
         int main() {

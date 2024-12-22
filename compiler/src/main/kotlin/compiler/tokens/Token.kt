@@ -5,24 +5,43 @@ sealed interface Token {
     data class Identifier(val value: String) : Token
 
     sealed interface Symbol : Token {
-        val c: Char
+        val s: String
 
-        enum class Separator(override val c: Char) : Symbol {
-            OPEN_PAREN('('),
-            CLOSE_PAREN(')'),
-            OPEN_BRACE('{'),
-            CLOSE_BRACE('}'),
-            SEMICOLON(';'),
+        enum class Separator(override val s: String) : Symbol {
+            OPEN_PAREN("("),
+            CLOSE_PAREN(")"),
+            OPEN_BRACE("{"),
+            CLOSE_BRACE("}"),
+            SEMICOLON(";"),
         }
 
-        enum class Operator(override val c: Char) : Symbol {
-            MINUS('-'),
-            TILDE('~'),
-            BANG('!'),
+        enum class Operator(override val s: String) : Symbol {
+            SHL("<<"),
+            SHR(">>"),
 
-            PLUS('+'),
-            ASTERISK('*'),
-            DIV('/'),
+            EQ("=="),
+            NEQ("!="),
+            LE("<="),
+            GE(">="),
+
+            L_AND("&&"),
+            L_OR("||"),
+
+            LT("<"),
+            GT(">"),
+
+            B_AND("&"),
+            B_OR("|"),
+            XOR("^"),
+
+            MINUS("-"),
+            TILDE("~"),
+            BANG("!"),
+
+            PLUS("+"),
+            ASTERISK("*"),
+            DIV("/"),
+            MOD("%")
         }
     }
 

@@ -1,5 +1,6 @@
 package compiler.ast
 
+import common.JumpCondition
 import compiler.tokens.Token
 
 sealed interface Type {
@@ -37,6 +38,18 @@ sealed interface Expression {
         data class Subtract(override val a: Expression, override val b: Expression) : Binary
         data class Multiply(override val a: Expression, override val b: Expression) : Binary
         data class Divide(override val a: Expression, override val b: Expression) : Binary
+
+        data class Shl(override val a: Expression, override val b: Expression) : Binary
+        data class Shr(override val a: Expression, override val b: Expression) : Binary
+
+        data class Cmp(override val a: Expression, override val b: Expression, val cond: JumpCondition) : Binary
+
+        data class LogicalAnd(override val a: Expression, override val b: Expression) : Binary
+        data class LogicalOr(override val a: Expression, override val b: Expression) : Binary
+
+        data class BitwiseAnd(override val a: Expression, override val b: Expression) : Binary
+        data class BitwiseOr(override val a: Expression, override val b: Expression) : Binary
+        data class BitwiseXor(override val a: Expression, override val b: Expression) : Binary
     }
 
     companion object : Parser<Expression> {
@@ -59,7 +72,7 @@ sealed interface Expression {
             var root = unaryExpr.parse()
 
             while (true) {
-                root = parseAny(
+                root = parseAnyOrNull(
                     parser {
                         match(Token.Symbol.Operator.ASTERISK)
                         Binary.Multiply(root, unaryExpr.parse())
@@ -67,19 +80,18 @@ sealed interface Expression {
                     parser {
                         match(Token.Symbol.Operator.DIV)
                         Binary.Divide(root, unaryExpr.parse())
-                    },
-                    parser { null }
+                    }
                 ).parse() ?: break
             }
 
             root
         }
 
-        private val expr: Parser<Expression> = parser {
+        private val additiveExpr: Parser<Expression> = parser {
             var root = multiplicativeExpr.parse()
 
             while (true) {
-                root = parseAny(
+                root = parseAnyOrNull(
                     parser {
                         match(Token.Symbol.Operator.PLUS)
                         Binary.Add(root, multiplicativeExpr.parse())
@@ -87,13 +99,154 @@ sealed interface Expression {
                     parser {
                         match(Token.Symbol.Operator.MINUS)
                         Binary.Subtract(root, multiplicativeExpr.parse())
-                    },
-                    parser { null }
+                    }
                 ).parse() ?: break
             }
 
             root
         }
+
+        private val shiftExpr: Parser<Expression> = parser {
+            var root = additiveExpr.parse()
+
+            while (true) {
+                root = parseAnyOrNull(
+                    parser {
+                        match(Token.Symbol.Operator.SHL)
+                        Binary.Shl(root, additiveExpr.parse())
+                    },
+                    parser {
+                        match(Token.Symbol.Operator.SHR)
+                        Binary.Shr(root, additiveExpr.parse())
+                    }
+                ).parse() ?: break
+            }
+
+            root
+        }
+
+        private val relExpr: Parser<Expression> = parser {
+            var root = shiftExpr.parse()
+
+            while (true) {
+                root = parseAnyOrNull(
+                    parser {
+                        match(Token.Symbol.Operator.LT)
+                        Binary.Cmp(root, shiftExpr.parse(), JumpCondition(lt = true))
+                    },
+                    parser {
+                        match(Token.Symbol.Operator.GT)
+                        Binary.Cmp(root, shiftExpr.parse(), JumpCondition(gt = true))
+                    },
+                    parser {
+                        match(Token.Symbol.Operator.LE)
+                        Binary.Cmp(root, shiftExpr.parse(), JumpCondition(lt = true, eq = true))
+                    },
+                    parser {
+                        match(Token.Symbol.Operator.GE)
+                        Binary.Cmp(root, shiftExpr.parse(), JumpCondition(eq = true, gt = true))
+                    }
+                ).parse() ?: break
+            }
+
+            root
+        }
+
+        private val eqExpr: Parser<Expression> = parser {
+            var root = relExpr.parse()
+
+            while (true) {
+                root = parseAnyOrNull(
+                    parser {
+                        match(Token.Symbol.Operator.EQ)
+                        Binary.Cmp(root, relExpr.parse(), JumpCondition(eq = true))
+                    },
+                    parser {
+                        match(Token.Symbol.Operator.NEQ)
+                        Binary.Cmp(root, relExpr.parse(), JumpCondition(lt = true, gt = true))
+                    }
+                ).parse() ?: break
+            }
+
+            root
+        }
+
+        private val andExpr: Parser<Expression> = parser {
+            var root = eqExpr.parse()
+
+            while (true) {
+                root = parseAnyOrNull(
+                    parser {
+                        match(Token.Symbol.Operator.B_AND)
+                        Binary.BitwiseAnd(root, eqExpr.parse())
+                    }
+                ).parse() ?: break
+            }
+
+            root
+        }
+
+        private val xorExpr: Parser<Expression> = parser {
+            var root = andExpr.parse()
+
+            while (true) {
+                root = parseAnyOrNull(
+                    parser {
+                        match(Token.Symbol.Operator.XOR)
+                        Binary.BitwiseXor(root, andExpr.parse())
+                    }
+                ).parse() ?: break
+            }
+
+            root
+        }
+
+        private val orExpr: Parser<Expression> = parser {
+            var root = xorExpr.parse()
+
+            while (true) {
+                root = parseAnyOrNull(
+                    parser {
+                        match(Token.Symbol.Operator.B_OR)
+                        Binary.BitwiseOr(root, xorExpr.parse())
+                    }
+                ).parse() ?: break
+            }
+
+            root
+        }
+
+        private val lAndExpr: Parser<Expression> = parser {
+            var root = orExpr.parse()
+
+            while (true) {
+                root = parseAnyOrNull(
+                    parser {
+                        match(Token.Symbol.Operator.L_AND)
+                        Binary.LogicalAnd(root, orExpr.parse())
+                    }
+                ).parse() ?: break
+            }
+
+            root
+        }
+
+        private val lOrExpr: Parser<Expression> = parser {
+            var root = lAndExpr.parse()
+
+            while (true) {
+                root = parseAnyOrNull(
+                    parser {
+                        match(Token.Symbol.Operator.L_OR)
+                        Binary.LogicalOr(root, lAndExpr.parse())
+                    }
+                ).parse() ?: break
+            }
+
+            root
+        }
+        
+        private val expr = lOrExpr
 
         override fun runParser(tokens: TokenStream, index: Int) = expr.runParser(tokens, index)
     }
