@@ -3,13 +3,40 @@ package compiler.ast
 import compiler.tokens.Token
 
 sealed interface Statement {
-    data class Return(val expression: Expression) : Statement
+    data class Expr(val expression: Expression) : Statement {
+        companion object : Parser<Expr> by parser ({
+            Expr(Expression.parse()).also { match(Token.Symbol.Separator.SEMICOLON) }
+        })
+    }
 
-    companion object : Parser<Statement> by parser({
-        match(Token.Keyword.RETURN)
+    data class Declaration(val type: Type, val name: String, val initializer: Expression?) : Statement {
+        companion object : Parser<Declaration> by parser ({
+            val type = Type.parse()
+            val name = match<Token.Identifier>().value
+            var initializer: Expression? = null
 
-        Return(Expression.parse())
-    })
+            if (peek() == Token.Symbol.Operator.ASSIGN) {
+                match(Token.Symbol.Operator.ASSIGN)
+                initializer = Expression.parse()
+            }
+
+            Declaration(type, name, initializer).also { match(Token.Symbol.Separator.SEMICOLON) }
+        })
+    }
+
+    data class Return(val expression: Expression) : Statement {
+        companion object : Parser<Return> by parser ({
+            match(Token.Keyword.RETURN)
+
+            Return(Expression.parse()).also { match(Token.Symbol.Separator.SEMICOLON) }
+        })
+    }
+
+    companion object : Parser<Statement> by parseAny(
+        Expr,
+        Declaration,
+        Return
+    )
 }
 
 private val matchingSymbols = mapOf(
@@ -50,16 +77,13 @@ fun blockParser(blockType: Token.Symbol.Separator): Parser<List<Token>> {
 }
 
 val statementBlockParser = parser<List<Statement>> {
-    val statements = mutableListOf<Statement>()
-    var remaining = blockParser(Token.Symbol.Separator.OPEN_BRACE).parse()
+    blockParser(Token.Symbol.Separator.OPEN_BRACE).parse().parseWith(parser {
+        val statements = mutableListOf<Statement>()
 
-    while (remaining.isNotEmpty()) {
-        val line = remaining.takeWhile { it != Token.Symbol.Separator.SEMICOLON }
-        remaining = remaining.drop(line.size + 1)
+        while (peek() != null) {
+            statements.add(Statement.parse())
+        }
 
-        if (line.isEmpty()) continue
-        statements.add(line.parseWith(Statement))
-    }
-
-    statements
+        statements
+    })
 }

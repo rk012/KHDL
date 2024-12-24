@@ -41,7 +41,9 @@ sealed interface Token {
             PLUS("+"),
             ASTERISK("*"),
             DIV("/"),
-            MOD("%")
+            MOD("%"),
+
+            ASSIGN("=")
         }
     }
 

@@ -23,7 +23,7 @@ interface CompiledFunction {
 }
 
 context(CompilerContext)
-private fun AsmBuilderScope.evalShift(shl: Boolean): Unit = with(registerStack) {
+private fun AsmBuilderScope.evalShift(shl: Boolean): Unit = with(scope.rStack) {
     val loop = Any()
     val end = Any()
 
@@ -46,25 +46,27 @@ private fun AsmBuilderScope.evalShift(shl: Boolean): Unit = with(registerStack) 
 }
 
 context(CompilerContext)
-fun AsmBuilderScope.eval(expr: Expression): Unit = with(registerStack) {
+fun AsmBuilderScope.eval(expr: Expression): Unit = with(scope) {
     when (expr) {
-        is Expression.Literal<*> -> rpushLit((expr.literal as Token.Literal.IntLiteral).value)
+        is Expression.Literal<*> -> rStack.rpushLit((expr.literal as Token.Literal.IntLiteral).value)
+
+        is Expression.Variable -> rpushVar(expr.name)
 
         is Expression.Unary -> {
             eval(expr.operand)
 
             when (expr) {
-                is Expression.Unary.LogicalNot -> uCmp(JumpCondition(eq = true))
+                is Expression.Unary.LogicalNot -> rStack.uCmp(JumpCondition(eq = true))
 
-                is Expression.Unary.BitwiseNot -> uOp(AluOperation.NOT_A)
-                is Expression.Unary.Negate -> uOp(AluOperation.NEG_A)
+                is Expression.Unary.BitwiseNot -> rStack.uOp(AluOperation.NOT_A)
+                is Expression.Unary.Negate -> rStack.uOp(AluOperation.NEG_A)
             }
         }
 
         is Expression.Binary -> {
-            val oldSize = rSize
+            val oldSize = rStack.rSize
             eval(expr.a)
-            check(rSize - oldSize == 1)
+            check(rStack.rSize - oldSize == 1)
 
             val lop = when (expr) {
                 is Expression.Binary.LogicalAnd -> true
@@ -75,12 +77,12 @@ fun AsmBuilderScope.eval(expr: Expression): Unit = with(registerStack) {
             if (lop != null) {
                 val end = Any()
                 +set(WritableRegister.Q, getLabel(end))
-                +aluP(r0, r0, AluOperation.A)
+                +aluP(rStack.r0, rStack.r0, AluOperation.A)
 
                 if (lop) +je(WritableRegister.Q)  // &&
                 else +jne(WritableRegister.Q)  // ||
 
-                rpop()
+                rStack.rpop()
                 eval(expr.b)
 
                 +Label(end)
@@ -88,21 +90,21 @@ fun AsmBuilderScope.eval(expr: Expression): Unit = with(registerStack) {
             }
 
             eval(expr.b)
-            check(rSize - oldSize == 2)
+            check(rStack.rSize - oldSize == 2)
 
             when (expr) {
-                is Expression.Binary.Add -> binOp(AluOperation.A_PLUS_B)
-                is Expression.Binary.Subtract -> binOp(AluOperation.A_MINUS_B)
+                is Expression.Binary.Add -> rStack.binOp(AluOperation.A_PLUS_B)
+                is Expression.Binary.Subtract -> rStack.binOp(AluOperation.A_MINUS_B)
 
                 is Expression.Binary.Divide -> TODO()
                 is Expression.Binary.Multiply -> TODO()
 
-                is Expression.Binary.BitwiseAnd -> binOp(AluOperation.AND)
-                is Expression.Binary.BitwiseOr -> binOp(AluOperation.OR)
-                is Expression.Binary.BitwiseXor -> binOp(AluOperation.XOR)
+                is Expression.Binary.BitwiseAnd -> rStack.binOp(AluOperation.AND)
+                is Expression.Binary.BitwiseOr -> rStack.binOp(AluOperation.OR)
+                is Expression.Binary.BitwiseXor -> rStack.binOp(AluOperation.XOR)
                 is Expression.Binary.Cmp -> {
-                    binOp(AluOperation.A_MINUS_B)
-                    uCmp(expr.cond)
+                    rStack.binOp(AluOperation.A_MINUS_B)
+                    rStack.uCmp(expr.cond)
                 }
 
                 is Expression.Binary.Shl -> evalShift(true)
@@ -111,6 +113,13 @@ fun AsmBuilderScope.eval(expr: Expression): Unit = with(registerStack) {
                 is Expression.Binary.LogicalAnd -> error("Unreachable")
                 is Expression.Binary.LogicalOr -> error("Unreachable")
             }
+        }
+
+        is Expression.Assignment -> {
+            eval(expr.expr)
+            rStack.rpush()
+            +mov(rStack.r1 to rStack.r0)
+            rpopVar(expr.name)
         }
     }
 }
@@ -121,13 +130,27 @@ fun compileFunction(fn: FunctionDeclaration) = object : CompiledFunction {
 
     override val assembly = asm {
         fn.body.forEach { stmt ->
+            check(scope.rStack.rSize == 0)
+
             when (stmt) {
-                is Statement.Return -> {
-                    require(registerStack.rSize == 0)
+                is Statement.Expr -> {
                     eval(stmt.expression)
-                    require(registerStack.rSize == 1)
-                    with(registerStack) { rpop() }
+                    scope.rStack.rpop()
+                }
+
+                is Statement.Return -> {
+                    eval(stmt.expression)
+                    check(scope.rStack.rSize == 1)
+                    scope.rStack.rpop()
                     +ret()
+                }
+
+                is Statement.Declaration -> {
+                    scope.newVar(stmt.name, stmt.type.wordSize)
+                    if (stmt.initializer != null) {
+                        eval(stmt.initializer)
+                        scope.rpopVar(stmt.name)
+                    }
                 }
             }
         }

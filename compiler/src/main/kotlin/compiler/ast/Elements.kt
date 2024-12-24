@@ -4,8 +4,10 @@ import common.JumpCondition
 import compiler.tokens.Token
 
 sealed interface Type {
-    enum class Primitive : Type {
-        INT,
+    val wordSize: Int
+
+    enum class Primitive(override val wordSize: Int) : Type {
+        INT(1),
     }
 
     companion object : Parser<Type> by parser ({
@@ -19,6 +21,12 @@ sealed interface Expression {
     data class Literal<out T>(val literal: Token.Literal<T>) : Expression {
         companion object : Parser<Literal<*>> by parser({
             Literal(match<Token.Literal.IntLiteral>())
+        })
+    }
+
+    data class Variable(val name: String) : Expression {
+        companion object : Parser<Variable> by parser({
+            Variable(match<Token.Identifier>().value)
         })
     }
 
@@ -52,6 +60,8 @@ sealed interface Expression {
         data class BitwiseXor(override val a: Expression, override val b: Expression) : Binary
     }
 
+    data class Assignment(val name: String, val expr: Expression) : Expression
+
     companion object : Parser<Expression> {
         private val unaryExpr: Parser<Expression> by lazy { parseAny(
             parser {
@@ -65,7 +75,8 @@ sealed interface Expression {
                     else -> raise("Expected unary operator, got: $token")
                 }
             },
-            Literal
+            Literal,
+            Variable
         ) }
 
         private val multiplicativeExpr: Parser<Expression> = parser {
@@ -245,8 +256,19 @@ sealed interface Expression {
 
             root
         }
+
+        private val assignExpr: Parser<Expression> = parseAny(
+            parser {
+                val name = match<Token.Identifier>().value
+                match(Token.Symbol.Operator.ASSIGN)
+                val expr = Expression.parse()
+
+                Assignment(name, expr)
+            },
+            lOrExpr
+        )
         
-        private val expr = lOrExpr
+        private val expr = assignExpr
 
         override fun runParser(tokens: TokenStream, index: Int) = expr.runParser(tokens, index)
     }
