@@ -43,12 +43,17 @@ sealed interface Token {
             DIV("/"),
             MOD("%"),
 
-            ASSIGN("=")
+            ASSIGN("="),
+
+            QUESTION("?"),
+            COLON(":")
         }
     }
 
     enum class Keyword : Token {
         RETURN,
+        IF,
+        ELSE
     }
 
     sealed interface Literal<out T> : Token {

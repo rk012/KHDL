@@ -84,6 +84,17 @@ class RegisterStack {
     val r3
         get() = registers[(sp + 1) % 4]
 
+    fun rforget() {
+        require(rSize > 0)
+        sp = (sp + 3) % 4
+        rSize--
+    }
+
+    fun rfake() {
+        sp = (sp + 1) % 4
+        rSize++
+    }
+
     context(AsmBuilderScope)
     fun rpop() {
         require(rSize > 0)

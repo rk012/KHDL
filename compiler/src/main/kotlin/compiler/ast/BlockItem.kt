@@ -2,27 +2,51 @@ package compiler.ast
 
 import compiler.tokens.Token
 
-sealed interface Statement {
+sealed interface BlockItem {
+    companion object : Parser<BlockItem> by parseAny(
+        Declaration,
+        Statement
+    )
+}
+
+data class Declaration(val type: Type, val name: String, val initializer: Expression?) : BlockItem {
+    companion object : Parser<Declaration> by parser ({
+        val type = Type.parse()
+        val name = match<Token.Identifier>().value
+        var initializer: Expression? = null
+
+        if (peek() == Token.Symbol.Operator.ASSIGN) {
+            match(Token.Symbol.Operator.ASSIGN)
+            initializer = Expression.parse()
+        }
+
+        Declaration(type, name, initializer).also { match(Token.Symbol.Separator.SEMICOLON) }
+    })
+}
+
+sealed interface Statement : BlockItem {
     data class Expr(val expression: Expression) : Statement {
         companion object : Parser<Expr> by parser ({
             Expr(Expression.parse()).also { match(Token.Symbol.Separator.SEMICOLON) }
         })
     }
 
-    data class Declaration(val type: Type, val name: String, val initializer: Expression?) : Statement {
-        companion object : Parser<Declaration> by parser ({
-            val type = Type.parse()
-            val name = match<Token.Identifier>().value
-            var initializer: Expression? = null
+    data class IfElse(val cond: Expression, val ifStmt: Statement, val elseStmt: Statement?) : Statement {
+        companion object : Parser<IfElse> by parser ({
+            match(Token.Keyword.IF)
+            val cond = groupParser(Token.Symbol.Separator.OPEN_PAREN).parse().parseWith(Expression)
+            val ifStmt = Statement.parse()
+            var elseStmt: Statement? = null
 
-            if (peek() == Token.Symbol.Operator.ASSIGN) {
-                match(Token.Symbol.Operator.ASSIGN)
-                initializer = Expression.parse()
+            if (peek() == Token.Keyword.ELSE) {
+                match(Token.Keyword.ELSE)
+                elseStmt = Statement.parse()
             }
 
-            Declaration(type, name, initializer).also { match(Token.Symbol.Separator.SEMICOLON) }
+            IfElse(cond, ifStmt, elseStmt)
         })
     }
+
 
     data class Return(val expression: Expression) : Statement {
         companion object : Parser<Return> by parser ({
@@ -34,7 +58,7 @@ sealed interface Statement {
 
     companion object : Parser<Statement> by parseAny(
         Expr,
-        Declaration,
+        IfElse,
         Return
     )
 }
@@ -44,7 +68,7 @@ private val matchingSymbols = mapOf(
     Token.Symbol.Separator.OPEN_PAREN to Token.Symbol.Separator.CLOSE_PAREN,
 )
 
-fun blockParser(blockType: Token.Symbol.Separator): Parser<List<Token>> {
+fun groupParser(blockType: Token.Symbol.Separator): Parser<List<Token>> {
     require(blockType in matchingSymbols.keys)
 
     return parser {
@@ -76,12 +100,12 @@ fun blockParser(blockType: Token.Symbol.Separator): Parser<List<Token>> {
     }
 }
 
-val statementBlockParser = parser<List<Statement>> {
-    blockParser(Token.Symbol.Separator.OPEN_BRACE).parse().parseWith(parser {
-        val statements = mutableListOf<Statement>()
+val blockParser = parser<List<BlockItem>> {
+    groupParser(Token.Symbol.Separator.OPEN_BRACE).parse().parseWith(parser {
+        val statements = mutableListOf<BlockItem>()
 
         while (peek() != null) {
-            statements.add(Statement.parse())
+            statements.add(BlockItem.parse())
         }
 
         statements

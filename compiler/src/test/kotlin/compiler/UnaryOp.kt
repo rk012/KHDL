@@ -4,7 +4,7 @@ import compiler.ast.*
 import compiler.ast.Function
 import compiler.tokens.Token
 
-class UnaryOp : IntProgramTest {
+class UnaryOp : IntProgramTest(false) {
     override val sourceCode = """
         int main() {
             return !~-!0;

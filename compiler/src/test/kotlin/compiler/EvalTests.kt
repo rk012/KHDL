@@ -39,8 +39,7 @@ class EvalTests {
         "-1 && 0" to 0,
         "0 || 0" to 0,
         "1 && 0" to 0,
-
-        // TODO Test short circuit logic after adding assignment, local vars
+        "0 ? 1+1 : 2+3" to 5
     )
 
     @Test

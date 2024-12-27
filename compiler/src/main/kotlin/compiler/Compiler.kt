@@ -5,10 +5,7 @@ import assembler.instructions.*
 import common.AluOperation
 import common.JumpCondition
 import common.WritableRegister
-import compiler.ast.Expression
-import compiler.ast.FunctionDeclaration
-import compiler.ast.SourceNode
-import compiler.ast.Statement
+import compiler.ast.*
 import compiler.tokens.Token
 import compiler.tokens.lexer
 
@@ -115,11 +112,83 @@ fun AsmBuilderScope.eval(expr: Expression): Unit = with(scope) {
             }
         }
 
+        is Expression.Ternary -> with(scope.rStack) {
+            val initSize = rSize
+            val lb = Any()
+            val end = Any()
+
+            eval(expr.cond)
+            +localRef(lb)
+            +aluQ(r0, r0, AluOperation.A)
+            +je(WritableRegister.P)
+
+            rpop()
+            check(rSize == initSize)
+            eval(expr.a)
+            +localRef(end)
+            +jmp(WritableRegister.P)
+
+            +Label(lb)
+            rforget()
+            check(rSize == initSize)
+            eval(expr.b)
+
+            +Label(end)
+            check(rSize == initSize + 1)
+        }
+
         is Expression.Assignment -> {
             eval(expr.expr)
             rStack.rpush()
             +mov(rStack.r1 to rStack.r0)
             rpopVar(expr.name)
+        }
+    }
+}
+
+context(CompilerContext)
+fun AsmBuilderScope.compileStatement(stmt: Statement) {
+    when (stmt) {
+        is Statement.Expr -> {
+            eval(stmt.expression)
+            scope.rStack.rpop()
+        }
+
+        is Statement.Return -> {
+            eval(stmt.expression)
+            check(scope.rStack.rSize == 1)
+            scope.rStack.rpop()
+            +ret()
+        }
+
+        is Statement.IfElse -> with(scope.rStack) {
+            val lb = Any()
+            val end = Any()
+
+            eval(stmt.cond)
+            +localRef(lb)
+            +aluQ(r0, r0, AluOperation.A)
+            +je(WritableRegister.P)
+
+            rpop()
+            check(rSize == 0)
+            compileStatement(stmt.ifStmt)
+
+            if (stmt.elseStmt != null) {
+                +localRef(end)
+                +jmp(WritableRegister.P)
+            }
+
+            +Label(lb)
+            if (stmt.elseStmt != null) {
+                rfake()
+                rpop()
+                check(rSize == 0)
+                compileStatement(stmt.elseStmt)
+            }
+
+            +Label(end)
+            check(rSize == 0)
         }
     }
 }
@@ -133,19 +202,9 @@ fun compileFunction(fn: FunctionDeclaration) = object : CompiledFunction {
             check(scope.rStack.rSize == 0)
 
             when (stmt) {
-                is Statement.Expr -> {
-                    eval(stmt.expression)
-                    scope.rStack.rpop()
-                }
+                is Statement -> compileStatement(stmt)
 
-                is Statement.Return -> {
-                    eval(stmt.expression)
-                    check(scope.rStack.rSize == 1)
-                    scope.rStack.rpop()
-                    +ret()
-                }
-
-                is Statement.Declaration -> {
+                is Declaration -> {
                     scope.newVar(stmt.name, stmt.type.wordSize)
                     if (stmt.initializer != null) {
                         eval(stmt.initializer)
@@ -153,6 +212,8 @@ fun compileFunction(fn: FunctionDeclaration) = object : CompiledFunction {
                     }
                 }
             }
+
+            check(scope.rStack.rSize == 0)
         }
     }
 

@@ -4,7 +4,7 @@ import compiler.ast.*
 import compiler.ast.Function
 import compiler.tokens.Token
 
-class SingleIntConst : IntProgramTest {
+class SingleIntConst : IntProgramTest(false) {
     override val sourceCode = """
         int main() {
             return 5;

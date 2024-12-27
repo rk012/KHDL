@@ -60,12 +60,14 @@ sealed interface Expression {
         data class BitwiseXor(override val a: Expression, override val b: Expression) : Binary
     }
 
+    data class Ternary(val cond: Expression, val a: Expression, val b: Expression) : Expression
+
     data class Assignment(val name: String, val expr: Expression) : Expression
 
     companion object : Parser<Expression> {
         private val unaryExpr: Parser<Expression> by lazy { parseAny(
             parser {
-                blockParser(Token.Symbol.Separator.OPEN_PAREN).parse().parseWith(expr)
+                groupParser(Token.Symbol.Separator.OPEN_PAREN).parse().parseWith(expr)
             },
             parser {
                 when (val token = next()) {
@@ -257,6 +259,19 @@ sealed interface Expression {
             root
         }
 
+        private val condExpr: Parser<Expression> by lazy { parser {
+            val cond = lOrExpr.parse()
+
+            if (peek() != Token.Symbol.Operator.QUESTION) return@parser cond
+
+            match(Token.Symbol.Operator.QUESTION)
+            val a = Expression.parse()
+            match(Token.Symbol.Operator.COLON)
+            val b = condExpr.parse()
+
+            Ternary(cond, a, b)
+        } }
+
         private val assignExpr: Parser<Expression> = parseAny(
             parser {
                 val name = match<Token.Identifier>().value
@@ -265,7 +280,7 @@ sealed interface Expression {
 
                 Assignment(name, expr)
             },
-            lOrExpr
+            condExpr
         )
         
         private val expr = assignExpr
@@ -282,7 +297,7 @@ data class Function(
         val returnType = Type.parse()
         val name = match<Token.Identifier>().value
 
-        blockParser(Token.Symbol.Separator.OPEN_PAREN).parse()
+        groupParser(Token.Symbol.Separator.OPEN_PAREN).parse()
 
         Function(returnType, name)
     })
