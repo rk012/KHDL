@@ -46,6 +46,7 @@ sealed interface Expression {
         data class Subtract(override val a: Expression, override val b: Expression) : Binary
         data class Multiply(override val a: Expression, override val b: Expression) : Binary
         data class Divide(override val a: Expression, override val b: Expression) : Binary
+        data class Mod(override val a: Expression, override val b: Expression) : Binary
 
         data class Shl(override val a: Expression, override val b: Expression) : Binary
         data class Shr(override val a: Expression, override val b: Expression) : Binary
@@ -93,6 +94,10 @@ sealed interface Expression {
                     parser {
                         match(Token.Symbol.Operator.DIV)
                         Binary.Divide(root, unaryExpr.parse())
+                    },
+                    parser {
+                        match(Token.Symbol.Operator.MOD)
+                        Binary.Mod(root, unaryExpr.parse())
                     }
                 ).parse() ?: break
             }

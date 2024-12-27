@@ -95,6 +95,7 @@ fun AsmBuilderScope.eval(expr: Expression): Unit = with(scope) {
 
                 is Expression.Binary.Divide -> TODO()
                 is Expression.Binary.Multiply -> TODO()
+                is Expression.Binary.Mod -> TODO()
 
                 is Expression.Binary.BitwiseAnd -> rStack.binOp(AluOperation.AND)
                 is Expression.Binary.BitwiseOr -> rStack.binOp(AluOperation.OR)
