@@ -20,7 +20,7 @@ interface CompiledFunction {
 }
 
 context(CompilerContext)
-private fun AsmBuilderScope.evalShift(shl: Boolean): Unit = with(scope.rStack) {
+private fun AsmBuilderScope.evalShift(shl: Boolean): Unit = with(requireNotNull(scope).rStack) {
     val loop = Any()
     val end = Any()
 
@@ -43,7 +43,7 @@ private fun AsmBuilderScope.evalShift(shl: Boolean): Unit = with(scope.rStack) {
 }
 
 context(CompilerContext)
-fun AsmBuilderScope.eval(expr: Expression): Unit = with(scope) {
+fun AsmBuilderScope.eval(expr: Expression): Unit = with(requireNotNull(scope)) {
     when (expr) {
         is Expression.Literal<*> -> rStack.rpushLit((expr.literal as Token.Literal.IntLiteral).value)
 
@@ -113,7 +113,7 @@ fun AsmBuilderScope.eval(expr: Expression): Unit = with(scope) {
             }
         }
 
-        is Expression.Ternary -> with(scope.rStack) {
+        is Expression.Ternary -> with(rStack) {
             val initSize = rSize
             val lb = Any()
             val end = Any()
@@ -149,20 +149,26 @@ fun AsmBuilderScope.eval(expr: Expression): Unit = with(scope) {
 
 context(CompilerContext)
 fun AsmBuilderScope.compileStatement(stmt: Statement) {
+    requireNotNull(scope)
+
     when (stmt) {
+        is Statement.Block -> {
+            compileBlock(stmt)
+        }
+
         is Statement.Expr -> {
             eval(stmt.expression)
-            scope.rStack.rpop()
+            scope!!.rStack.rpop()
         }
 
         is Statement.Return -> {
             eval(stmt.expression)
-            check(scope.rStack.rSize == 1)
-            scope.rStack.rpop()
+            check(scope!!.rStack.rSize == 1)
+            scope!!.rStack.rpop()
             +ret()
         }
 
-        is Statement.IfElse -> with(scope.rStack) {
+        is Statement.IfElse -> with(scope!!.rStack) {
             val lb = Any()
             val end = Any()
 
@@ -195,27 +201,36 @@ fun AsmBuilderScope.compileStatement(stmt: Statement) {
 }
 
 context(CompilerContext)
+fun AsmBuilderScope.compileBlock(block: Statement.Block) {
+    newScope()
+
+    block.items.forEach {
+        check(scope!!.rStack.rSize == 0)
+
+        when (it) {
+            is Statement -> compileStatement(it)
+
+            is Declaration -> {
+                scope!!.newVar(it.name, it.type.wordSize)
+                if (it.initializer != null) {
+                    eval(it.initializer)
+                    scope!!.rpopVar(it.name)
+                }
+            }
+        }
+
+        check(scope!!.rStack.rSize == 0)
+    }
+
+    exitScope()
+}
+
+context(CompilerContext)
 fun compileFunction(fn: FunctionDeclaration) = object : CompiledFunction {
     override val name = "__fn_${fn.function.name}"
 
     override val assembly = asm {
-        fn.body.forEach { stmt ->
-            check(scope.rStack.rSize == 0)
-
-            when (stmt) {
-                is Statement -> compileStatement(stmt)
-
-                is Declaration -> {
-                    scope.newVar(stmt.name, stmt.type.wordSize)
-                    if (stmt.initializer != null) {
-                        eval(stmt.initializer)
-                        scope.rpopVar(stmt.name)
-                    }
-                }
-            }
-
-            check(scope.rStack.rSize == 0)
-        }
+        compileBlock(fn.body)
     }
 
 }

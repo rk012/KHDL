@@ -7,10 +7,12 @@ import assembler.instructions.*
 import common.AluOperation
 import common.JumpCondition
 import common.WritableRegister
+import kotlin.math.min
 
 class CompilerContext {
     private val loadedFunctions = mutableSetOf<CompiledFunction>()
-    val scope = LexicalScope()
+    var scope: LexicalScope? = null
+        private set
 
     fun addCompiled(fn: CompiledFunction) {
         loadedFunctions.add(fn)
@@ -27,6 +29,19 @@ class CompilerContext {
             addAll(fn.assembly)
         }
     }
+
+    fun AsmBuilderScope.newScope() {
+        scope?.rStack?.rsave()
+        scope = LexicalScope(scope)
+    }
+
+    fun AsmBuilderScope.exitScope() {
+        val oldScope = requireNotNull(scope)
+        require(oldScope.rStack.rSize == 0)
+        oldScope.dealloc()
+        scope = oldScope.parent
+        scope?.rStack?.rrestore()
+    }
 }
 
 class LexicalScope(val parent: LexicalScope? = null) {
@@ -41,6 +56,7 @@ class LexicalScope(val parent: LexicalScope? = null) {
 
     context(AsmBuilderScope)
     fun newVar(name: String, varSize: Int) {
+        require(name !in offsets)
         size += varSize
         offsets[name] = totalSize
         if (varSize == 1) +aluQ(WritableRegister.SP, WritableRegister.SP, AluOperation.A_MINUS_1)
@@ -63,6 +79,13 @@ class LexicalScope(val parent: LexicalScope? = null) {
         val offset = requireNotNull(getOffset(name)) { "Undeclared variable: $name" }
         +setVar(offset, rStack.r0)
         rStack.rpop()
+    }
+
+    context(AsmBuilderScope)
+    fun dealloc() {
+        +set(WritableRegister.Q, size)
+        +aluQ(WritableRegister.SP, WritableRegister.Q, AluOperation.A_PLUS_B)
+        +mov(WritableRegister.Q to WritableRegister.SP)
     }
 }
 
@@ -93,6 +116,20 @@ class RegisterStack {
     fun rfake() {
         sp = (sp + 1) % 4
         rSize++
+    }
+
+    context(AsmBuilderScope)
+    fun rsave() {
+        (0..<min(4, rSize)).map { registers[(sp+4-it) % 4] }.reversed().forEach {
+            +push(it)
+        }
+    }
+
+    context(AsmBuilderScope)
+    fun rrestore() {
+        (0..<min(4, rSize)).map { registers[(sp+4-it) % 4] }.forEach {
+            +pop(it)
+        }
     }
 
     context(AsmBuilderScope)

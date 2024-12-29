@@ -34,7 +34,7 @@ class UnaryOp : IntProgramTest(false) {
     override val expectedTree = SourceNode(listOf(
         FunctionDeclaration(
             Function(Type.Primitive.INT, "main"),
-            listOf(
+            Statement.Block(listOf(
                 Statement.Return(
                     Expression.Unary.LogicalNot(
                     Expression.Unary.BitwiseNot(
@@ -43,7 +43,7 @@ class UnaryOp : IntProgramTest(false) {
                     Expression.Literal(Token.Literal.IntLiteral(0))
 
                 )))))
-            )
+            ))
         )
     ))
 

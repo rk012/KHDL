@@ -14,7 +14,13 @@ class ConditionalShortCircuit : IntProgramTest() {
             
             if (1) return a;
             
-            return -1;
+            if (0) {
+                a = a + 1;
+            } else {
+                a = -a;
+            }
+            
+            return 1;
         }
     """.trimIndent()
 

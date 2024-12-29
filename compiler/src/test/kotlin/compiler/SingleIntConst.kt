@@ -28,9 +28,9 @@ class SingleIntConst : IntProgramTest(false) {
     override val expectedTree = SourceNode(listOf(
         FunctionDeclaration(
             Function(Type.Primitive.INT, "main"),
-            listOf(
+            Statement.Block(listOf(
                 Statement.Return(Expression.Literal(Token.Literal.IntLiteral(5)))
-            )
+            ))
         )
     ))
 

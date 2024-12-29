@@ -25,6 +25,22 @@ data class Declaration(val type: Type, val name: String, val initializer: Expres
 }
 
 sealed interface Statement : BlockItem {
+    data class Block(val items: List<BlockItem>) : Statement {
+        companion object : Parser<Block> by parser({
+            val items = groupParser(Token.Symbol.Separator.OPEN_BRACE).parse().parseWith(parser {
+                val statements = mutableListOf<BlockItem>()
+
+                while (peek() != null) {
+                    statements.add(BlockItem.parse())
+                }
+
+                statements
+            })
+
+            Block(items)
+        })
+    }
+
     data class Expr(val expression: Expression) : Statement {
         companion object : Parser<Expr> by parser ({
             Expr(Expression.parse()).also { match(Token.Symbol.Separator.SEMICOLON) }
@@ -57,6 +73,7 @@ sealed interface Statement : BlockItem {
     }
 
     companion object : Parser<Statement> by parseAny(
+        Block,
         Expr,
         IfElse,
         Return
@@ -98,16 +115,4 @@ fun groupParser(blockType: Token.Symbol.Separator): Parser<List<Token>> {
 
         tokens
     }
-}
-
-val blockParser = parser<List<BlockItem>> {
-    groupParser(Token.Symbol.Separator.OPEN_BRACE).parse().parseWith(parser {
-        val statements = mutableListOf<BlockItem>()
-
-        while (peek() != null) {
-            statements.add(BlockItem.parse())
-        }
-
-        statements
-    })
 }
