@@ -11,7 +11,7 @@ import compiler.tokens.lexer
 
 fun parseTokens(tokens: List<Token>) = SourceNode.parse(tokens).fold(
     onSuccess = { node, _ -> node },
-    onFailure = { error(it) }
+    onFailure = { error(it.message()) }
 )
 
 interface CompiledFunction {

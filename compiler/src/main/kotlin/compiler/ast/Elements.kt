@@ -68,7 +68,10 @@ sealed interface Expression {
     companion object : Parser<Expression> {
         private val unaryExpr: Parser<Expression> by lazy { parseAny(
             parser {
-                groupParser(Token.Symbol.Separator.OPEN_PAREN).parse().parseWith(expr)
+                match(Token.Symbol.Separator.OPEN_PAREN)
+                val expr = expr.parse()
+                match(Token.Symbol.Separator.CLOSE_PAREN)
+                expr
             },
             parser {
                 when (val token = next()) {
@@ -290,7 +293,7 @@ sealed interface Expression {
         
         private val expr = assignExpr
 
-        override fun runParser(tokens: TokenStream, index: Int) = expr.runParser(tokens, index)
+        override fun runParser(ctx: ParserContext) = expr.runParser(ctx)
     }
 }
 
@@ -302,7 +305,8 @@ data class Function(
         val returnType = Type.parse()
         val name = match<Token.Identifier>().value
 
-        groupParser(Token.Symbol.Separator.OPEN_PAREN).parse()
+        match(Token.Symbol.Separator.OPEN_PAREN)
+        match(Token.Symbol.Separator.CLOSE_PAREN)
 
         Function(returnType, name)
     })

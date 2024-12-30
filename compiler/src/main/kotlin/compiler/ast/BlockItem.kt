@@ -27,15 +27,14 @@ data class Declaration(val type: Type, val name: String, val initializer: Expres
 sealed interface Statement : BlockItem {
     data class Block(val items: List<BlockItem>) : Statement {
         companion object : Parser<Block> by parser({
-            val items = groupParser(Token.Symbol.Separator.OPEN_BRACE).parse().parseWith(parser {
-                val statements = mutableListOf<BlockItem>()
+            match(Token.Symbol.Separator.OPEN_BRACE)
+            val items = mutableListOf<BlockItem>()
 
-                while (peek() != null) {
-                    statements.add(BlockItem.parse())
-                }
+            while (true) {
+                items.add(parseAnyOrNull(BlockItem).parse() ?: break)
+            }
 
-                statements
-            })
+            match(Token.Symbol.Separator.CLOSE_BRACE)
 
             Block(items)
         })
@@ -50,7 +49,9 @@ sealed interface Statement : BlockItem {
     data class IfElse(val cond: Expression, val ifStmt: Statement, val elseStmt: Statement?) : Statement {
         companion object : Parser<IfElse> by parser ({
             match(Token.Keyword.IF)
-            val cond = groupParser(Token.Symbol.Separator.OPEN_PAREN).parse().parseWith(Expression)
+            match(Token.Symbol.Separator.OPEN_PAREN)
+            val cond = Expression.parse()
+            match(Token.Symbol.Separator.CLOSE_PAREN)
             val ifStmt = Statement.parse()
             var elseStmt: Statement? = null
 
@@ -78,41 +79,4 @@ sealed interface Statement : BlockItem {
         IfElse,
         Return
     )
-}
-
-private val matchingSymbols = mapOf(
-    Token.Symbol.Separator.OPEN_BRACE to Token.Symbol.Separator.CLOSE_BRACE,
-    Token.Symbol.Separator.OPEN_PAREN to Token.Symbol.Separator.CLOSE_PAREN,
-)
-
-fun groupParser(blockType: Token.Symbol.Separator): Parser<List<Token>> {
-    require(blockType in matchingSymbols.keys)
-
-    return parser {
-        match(blockType)
-
-        val stack = mutableListOf(matchingSymbols[blockType]!!)
-        val tokens = mutableListOf<Token>()
-
-        while (true) {
-            val token = next()
-
-            if (token is Token.Symbol.Separator) {
-                if (token in matchingSymbols.keys) {
-                    stack.add(matchingSymbols[token]!!)
-                }
-
-                if (token in matchingSymbols.values) {
-                    if (stack.isEmpty() || stack.removeLast() != token) {
-                        raise("Mismatched symbol: ${token.s}")
-                    }
-                }
-            }
-
-            if (stack.isEmpty()) break
-            tokens.add(token)
-        }
-
-        tokens
-    }
 }

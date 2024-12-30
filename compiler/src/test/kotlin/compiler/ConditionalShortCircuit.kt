@@ -10,7 +10,7 @@ class ConditionalShortCircuit : IntProgramTest() {
             
             a = (a == 2) ? 2+a : 3+a;
             
-            if (c == 9 || a=0) a = a + 1;
+            if (c == 9 || (a=0)) a = a + 1;
             
             if (1) return a;
             
