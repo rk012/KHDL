@@ -73,7 +73,7 @@ sealed interface Expression {
                 match(Token.Symbol.Separator.CLOSE_PAREN)
                 expr
             },
-            parser {
+            parser("unaryExpr") {
                 when (val token = next()) {
                     Token.Symbol.Operator.MINUS -> Unary.Negate(unaryExpr.parse())
                     Token.Symbol.Operator.BANG -> Unary.LogicalNot(unaryExpr.parse())
@@ -85,7 +85,7 @@ sealed interface Expression {
             Variable
         ) }
 
-        private val multiplicativeExpr: Parser<Expression> = parser {
+        private val multiplicativeExpr: Parser<Expression> by propParser {
             var root = unaryExpr.parse()
 
             while (true) {
@@ -108,7 +108,7 @@ sealed interface Expression {
             root
         }
 
-        private val additiveExpr: Parser<Expression> = parser {
+        private val additiveExpr: Parser<Expression> by propParser {
             var root = multiplicativeExpr.parse()
 
             while (true) {
@@ -127,7 +127,7 @@ sealed interface Expression {
             root
         }
 
-        private val shiftExpr: Parser<Expression> = parser {
+        private val shiftExpr: Parser<Expression> by propParser {
             var root = additiveExpr.parse()
 
             while (true) {
@@ -146,7 +146,7 @@ sealed interface Expression {
             root
         }
 
-        private val relExpr: Parser<Expression> = parser {
+        private val relExpr: Parser<Expression> by propParser {
             var root = shiftExpr.parse()
 
             while (true) {
@@ -173,7 +173,7 @@ sealed interface Expression {
             root
         }
 
-        private val eqExpr: Parser<Expression> = parser {
+        private val eqExpr: Parser<Expression> by propParser {
             var root = relExpr.parse()
 
             while (true) {
@@ -192,7 +192,7 @@ sealed interface Expression {
             root
         }
 
-        private val andExpr: Parser<Expression> = parser {
+        private val andExpr: Parser<Expression> by propParser {
             var root = eqExpr.parse()
 
             while (true) {
@@ -207,7 +207,7 @@ sealed interface Expression {
             root
         }
 
-        private val xorExpr: Parser<Expression> = parser {
+        private val xorExpr: Parser<Expression> by propParser {
             var root = andExpr.parse()
 
             while (true) {
@@ -222,7 +222,7 @@ sealed interface Expression {
             root
         }
 
-        private val orExpr: Parser<Expression> = parser {
+        private val orExpr: Parser<Expression> by propParser {
             var root = xorExpr.parse()
 
             while (true) {
@@ -237,7 +237,7 @@ sealed interface Expression {
             root
         }
 
-        private val lAndExpr: Parser<Expression> = parser {
+        private val lAndExpr: Parser<Expression> by propParser {
             var root = orExpr.parse()
 
             while (true) {
@@ -252,7 +252,7 @@ sealed interface Expression {
             root
         }
 
-        private val lOrExpr: Parser<Expression> = parser {
+        private val lOrExpr: Parser<Expression> by propParser {
             var root = lAndExpr.parse()
 
             while (true) {
@@ -267,10 +267,10 @@ sealed interface Expression {
             root
         }
 
-        private val condExpr: Parser<Expression> by lazy { parser {
+        private val condExpr: Parser<Expression> by propParser {
             val cond = lOrExpr.parse()
 
-            if (peek() != Token.Symbol.Operator.QUESTION) return@parser cond
+            if (peek() != Token.Symbol.Operator.QUESTION) return@propParser cond
 
             match(Token.Symbol.Operator.QUESTION)
             val a = Expression.parse()
@@ -278,10 +278,10 @@ sealed interface Expression {
             val b = condExpr.parse()
 
             Ternary(cond, a, b)
-        } }
+        }
 
         private val assignExpr: Parser<Expression> = parseAny(
-            parser {
+            parser("assignExpr") {
                 val name = match<Token.Identifier>().value
                 match(Token.Symbol.Operator.ASSIGN)
                 val expr = Expression.parse()

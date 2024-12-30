@@ -4,6 +4,8 @@ import compiler.tokens.Token
 import kotlin.coroutines.*
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 
 typealias TokenStream = List<Token>
 
@@ -16,7 +18,12 @@ sealed interface ParserResult<out T> {
     data class Success<T>(val value: T, val numTokens: Int) : ParserResult<T>
     sealed interface Failure: ParserResult<Nothing> {
         data class RootFail(val reason: String) : Failure
-        data class BindFail(val parsedTokens: List<Token>, val subFail: Failure) : Failure
+        data class BindFail(
+            val parserName: String,
+            val parsedTokens: List<Token>,
+            val items: List<Any?>,
+            val subFail: Failure
+        ) : Failure
         data class MultiFail(val subFails: List<Failure>) : Failure {
             init {
                 require(subFails.size >= 2)
@@ -59,14 +66,16 @@ fun <T> parseAny(vararg parsers: Parser<T>): Parser<T> {
     }
 }
 
-fun <T> parseAnyOrNull(vararg parsers: Parser<T>) = parseAny(*parsers, parser { null })
+fun <T> parseAnyOrNull(vararg parsers: Parser<T>) = parseAny(*parsers, parser("") { null })
 
 @RestrictsSuspension
-class ParserScope internal constructor(private val ctx: ParserContext) {
+class ParserScope internal constructor(private val ctx: ParserContext, private val name: String) {
     private var index = ctx.index
 
     val numParsed get() = index - ctx.index
     private val parsedTokens get() = ctx.tokens.subList(ctx.index, index)
+
+    private val parsedItems = mutableListOf<Any?>()
 
     internal lateinit var acc: ParserResult<*>
 
@@ -74,11 +83,12 @@ class ParserScope internal constructor(private val ctx: ParserContext) {
         acc = when (this) {
             is ParserResult.Failure -> {
                 check(!this@ParserScope::acc.isInitialized)
-                ParserResult.Failure.BindFail(parsedTokens, this)
+                ParserResult.Failure.BindFail(name, parsedTokens, parsedItems, this)
             }
 
             is ParserResult.Success<T> -> {
                 index += numTokens
+                parsedItems.add(value)
                 cont.resume(value)
                 acc // Modified from cont.resume()
             }
@@ -96,8 +106,8 @@ class ParserScope internal constructor(private val ctx: ParserContext) {
     suspend fun next() = AnyToken.parse()
 }
 
-fun <T> parser(block: suspend ParserScope.() -> T) = Parser { ctx ->
-    val scope = ParserScope(ctx)
+fun <T> parser(name: String, block: suspend ParserScope.() -> T) = Parser { ctx ->
+    val scope = ParserScope(ctx, name)
 
     block.startCoroutine(scope, Continuation(EmptyCoroutineContext) {
         scope.acc = ParserResult.Success(it.getOrThrow(), scope.numParsed)
@@ -107,12 +117,23 @@ fun <T> parser(block: suspend ParserScope.() -> T) = Parser { ctx ->
     scope.acc as ParserResult<T>
 }
 
-fun matchToken(token: Token) = parser {
-    val nxt = next()
-    if (nxt != token) raise("Expected $token, got $nxt")
+inline fun <reified T> parser(noinline block: suspend ParserScope.() -> T) = parser(T::class.simpleName!!, block)
+
+fun <T> propParser(block: suspend ParserScope.() -> T) = object : ReadOnlyProperty<Any?, Parser<T>> {
+    private var parser: Parser<T>? = null
+    override fun getValue(thisRef: Any?, property: KProperty<*>): Parser<T> {
+        parser?.let { return@getValue it }
+        return parser(property.name, block).also { parser = it }
+    }
 }
 
-inline fun <reified T : Token> matchToken() = parser {
+fun matchToken(token: Token) = parser("matchToken") {
+    val nxt = next()
+    if (nxt != token) raise("Expected $token, got $nxt")
+    nxt
+}
+
+inline fun <reified T : Token> matchToken() = parser("matchToken") {
     val next = next()
     if (next !is T) raise("Expected token type ${T::class.simpleName}, got $next")
     next
@@ -123,7 +144,9 @@ suspend inline fun <reified T : Token> ParserScope.match() = matchToken<T>().par
 
 fun ParserResult.Failure.message(): String = when(this) {
     is ParserResult.Failure.RootFail -> reason
-    is ParserResult.Failure.BindFail -> "${parsedTokens}\n.${subFail.message().replace("\n", "\n.")}"
+    is ParserResult.Failure.BindFail -> """
+        |${parserName}: ${parsedTokens.size} Tokens, ${items.filterNotNull().map { it::class.simpleName } }
+        |.${subFail.message().replace("\n", "\n.")}""".trimMargin()
     is ParserResult.Failure.MultiFail -> subFails.joinToString("\n") { it.message() }
 }
 
