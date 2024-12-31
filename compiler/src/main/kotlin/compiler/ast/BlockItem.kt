@@ -40,10 +40,16 @@ sealed interface Statement : BlockItem {
         })
     }
 
-    data class Expr(val expression: Expression) : Statement {
-        companion object : Parser<Expr> by parser ({
-            Expr(Expression.parse()).also { match(Token.Symbol.Separator.SEMICOLON) }
-        })
+    data class Expr(val expression: Expression?) : Statement {
+        companion object : Parser<Expr> by parseAny (
+            parser("Empty Expr") {
+                match(Token.Symbol.Separator.SEMICOLON)
+                Expr(null)
+            },
+            parser("Nonempty Expr") {
+                Expr(Expression.parse()).also { match(Token.Symbol.Separator.SEMICOLON) }
+            }
+        )
     }
 
     data class IfElse(val cond: Expression, val ifStmt: Statement, val elseStmt: Statement?) : Statement {
@@ -73,10 +79,110 @@ sealed interface Statement : BlockItem {
         })
     }
 
+    sealed interface For : Statement {
+        val init: BlockItem
+        val cond: Expression?
+        val end: Expr
+        val body: Statement
+
+        data class ForExpr(
+            override val init: Expr,
+            override val cond: Expression?,
+            override val end: Expr,
+            override val body: Statement
+        ) : For {
+            companion object : Parser<ForExpr> by parser({
+                match(Token.Keyword.FOR)
+                match(Token.Symbol.Separator.OPEN_PAREN)
+                val init = Expr.parse()
+                val cond = Expr.parse()
+                val end = if (peek() != Token.Symbol.Separator.CLOSE_PAREN) Expression.parse() else null
+                match(Token.Symbol.Separator.CLOSE_PAREN)
+                val body = Statement.parse()
+
+                ForExpr(
+                    init,
+                    cond.expression,
+                    Expr(end),
+                    body
+                )
+            })
+        }
+
+        data class ForDecl(
+            override val init: Declaration,
+            override val cond: Expression?,
+            override val end: Expr,
+            override val body: Statement
+        ) : For {
+            companion object : Parser<ForDecl> by parser({
+                match(Token.Keyword.FOR)
+                match(Token.Symbol.Separator.OPEN_PAREN)
+                val init = Declaration.parse()
+                val cond = Expr.parse()
+                val end = if (peek() != Token.Symbol.Separator.CLOSE_PAREN) Expression.parse() else null
+                match(Token.Symbol.Separator.CLOSE_PAREN)
+                val body = Statement.parse()
+
+                ForDecl(
+                    init,
+                    cond.expression,
+                    Expr(end),
+                    body
+                )
+            })
+        }
+
+        companion object : Parser<For> by parseAny(
+            ForExpr,
+            ForDecl
+        )
+    }
+
+    data class While(val guard: Expression, val body: Statement, val isDoWhile: Boolean) : Statement {
+        companion object : Parser<While> by parseAny(
+            parser("While") {
+                match(Token.Keyword.WHILE)
+                match(Token.Symbol.Separator.OPEN_PAREN)
+                val guard = Expression.parse()
+                match(Token.Symbol.Separator.CLOSE_PAREN)
+                val body = Statement.parse()
+
+                While(guard, body, false)
+            },
+            parser("Do") {
+                match(Token.Keyword.DO)
+                val body = Statement.parse()
+                match(Token.Keyword.WHILE)
+                match(Token.Symbol.Separator.OPEN_PAREN)
+                val guard = Expression.parse()
+                match(Token.Symbol.Separator.CLOSE_PAREN)
+                While(guard, body, true)
+            }
+        )
+    }
+
+    data object Break : Statement, Parser<Break> by parser({
+        match(Token.Keyword.BREAK)
+        match(Token.Symbol.Separator.SEMICOLON)
+        Break
+    })
+
+    data object Continue : Statement, Parser<Continue> by parser({
+        match(Token.Keyword.CONTINUE)
+        match(Token.Symbol.Separator.SEMICOLON)
+        Continue
+    })
+
+
     companion object : Parser<Statement> by parseAny(
         Block,
         Expr,
         IfElse,
-        Return
+        Return,
+        For,
+        While,
+        Break,
+        Continue
     )
 }

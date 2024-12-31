@@ -14,6 +14,9 @@ class CompilerContext {
     var scope: LexicalScope? = null
         private set
 
+    private val breakLabels = mutableListOf<Any>()
+    private val continueLabels = mutableListOf<Any>()
+
     fun addCompiled(fn: CompiledFunction) {
         loadedFunctions.add(fn)
     }
@@ -41,6 +44,26 @@ class CompilerContext {
         oldScope.dealloc()
         scope = oldScope.parent
         scope?.rStack?.rrestore()
+    }
+
+    fun pushBreakContLabel(breakLabel: Any, contLabel: Any) {
+        breakLabels.add(breakLabel)
+        continueLabels.add(contLabel)
+    }
+
+    fun popBreakContLabel() {
+        breakLabels.removeLast()
+        continueLabels.removeLast()
+    }
+
+    fun AsmBuilderScope.jmpBreak() {
+        +localRef(breakLabels.last())
+        +jmp(WritableRegister.P)
+    }
+
+    fun AsmBuilderScope.jmpCont() {
+        +localRef(continueLabels.last())
+        +jmp(WritableRegister.P)
     }
 }
 

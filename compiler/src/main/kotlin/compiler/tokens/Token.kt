@@ -53,7 +53,12 @@ sealed interface Token {
     enum class Keyword : Token {
         RETURN,
         IF,
-        ELSE
+        ELSE,
+        FOR,
+        WHILE,
+        DO,
+        BREAK,
+        CONTINUE
     }
 
     sealed interface Literal<out T> : Token {
