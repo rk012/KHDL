@@ -6,6 +6,7 @@ import common.AluOperation
 import common.JumpCondition
 import common.WritableRegister
 import compiler.ast.*
+import compiler.ast.Function
 import compiler.tokens.Token
 import compiler.tokens.lexer
 
@@ -144,6 +145,21 @@ fun AsmBuilderScope.eval(expr: Expression): Unit = with(requireNotNull(scope)) {
             rStack.rpush()
             +mov(rStack.r1 to rStack.r0)
             rpopVar(expr.name)
+        }
+
+        is Expression.FunctionCall -> {
+            expr.args.asReversed().forEach {
+                eval(it)
+            }
+
+            check(rStack.rSize - oldSize == expr.args.size)
+
+            rStack.rsave()
+
+            if (expr.name in imports) +callExt(expr.name)
+            else +callLocal("__fn_${expr.name}")
+
+            rStack.rrestore(expr.args.size)
         }
     }
 
@@ -304,24 +320,129 @@ fun AsmBuilderScope.compileBlock(block: Statement.Block) {
 }
 
 context(CompilerContext)
-fun compileFunction(fn: FunctionDeclaration) = object : CompiledFunction {
+fun compileFunction(fn: GlobalElement.FunctionDefinition) = object : CompiledFunction {
     override val name = "__fn_${fn.function.name}"
 
     override val assembly = asm {
+        newScope()
+        scope!!.loadArgs(fn.function.args)
         compileBlock(fn.body)
+        exitScope()
     }
 
 }
 
-fun compileSource(sourceCode: String): Assembly {
-    val ast = parseTokens(lexer(sourceCode))
-    val ctx = CompilerContext()
+private fun Expression?.functionCalls(): Sequence<Expression.FunctionCall> = sequence {
+    when (this@functionCalls) {
+        is Expression.Assignment -> yieldAll(expr.functionCalls())
+        is Expression.Unary -> yieldAll(operand.functionCalls())
+        is Expression.Binary -> yieldAll(a.functionCalls() + b.functionCalls())
+        is Expression.Ternary -> yieldAll(cond.functionCalls() + a.functionCalls() + b.functionCalls())
+        is Expression.FunctionCall -> {
+            args.forEach { yieldAll(it.functionCalls()) }
+            yield(this@functionCalls)
+        }
+        else -> Unit
+    }
+}
 
-    with(ctx) {
-        ast.items.forEach {
-            ctx.addCompiled(compileFunction(it))
+private fun BlockItem?.functionCalls(): Sequence<Expression.FunctionCall> = sequence {
+    when (this@functionCalls) {
+        is Declaration -> yieldAll(initializer.functionCalls())
+        is Statement.Expr -> yieldAll(expression.functionCalls())
+        is Statement.For -> yieldAll(
+            init.functionCalls() + cond.functionCalls() + end.functionCalls() + body.functionCalls()
+        )
+        is Statement.IfElse -> yieldAll(cond.functionCalls() + ifStmt.functionCalls() + elseStmt.functionCalls())
+        is Statement.While -> yieldAll(guard.functionCalls() + body.functionCalls())
+        is Statement.Return -> yieldAll(expression.functionCalls())
+        is Statement.Block -> items.forEach { yieldAll(it.functionCalls()) }
+        else -> Unit
+    }
+}
+
+fun scanTree(root: SourceNode): CompilerContext {
+    val declared = mutableMapOf<String, Function>()
+    val defined = mutableMapOf<String, Function>()
+
+    root.items.forEach { elem ->
+        when (elem) {
+            is GlobalElement.ForwardDeclaration -> {
+                declared[elem.function.name]?.let {
+                    require(it matchesSignature elem.function) { "Mismatched Signature" }
+                }
+
+                declared[elem.function.name] = elem.function
+            }
+            is GlobalElement.FunctionDefinition -> {
+                require(elem.function.name !in defined) { "Duplicate function definition" }
+
+                declared[elem.function.name]?.let {
+                    require(it matchesSignature elem.function) { "Mismatched Signature" }
+                }
+
+                declared[elem.function.name] = elem.function
+                defined[elem.function.name] = elem.function
+
+                elem.body.functionCalls().forEach {
+                    val fn = requireNotNull(declared[it.name]) { "Undeclared function ${it.name}" }
+
+                    // TODO Type Checking for function call args
+                    require(fn.args.size == it.args.size)
+                }
+            }
         }
     }
 
-    return ctx.compiledFunctions()
+    return CompilerContext(declared.keys - defined.keys, defined.keys)
+}
+
+data class CompiledSource(
+    val asm: Assembly,
+    val imports: List<String>,
+    val exports: List<String>
+)
+
+fun compileSource(sourceCode: String): CompiledSource {
+    val ast = parseTokens(lexer(sourceCode))
+    val ctx = scanTree(ast)
+
+    with(ctx) {
+        ast.items.forEach {
+            when (it) {
+                is GlobalElement.FunctionDefinition -> ctx.addCompiled(compileFunction(it))
+                is GlobalElement.ForwardDeclaration -> Unit
+            }
+        }
+    }
+
+    return CompiledSource(
+        asm = ctx.compiledFunctions(),
+        imports = ctx.imports.toList(),
+        exports = ctx.exports.toList()
+    )
+}
+
+fun compileSingleSource(sourceCode: String, offset: Int = 0) = asm {
+    +set(WritableRegister.SP, 0)
+    +mov(WritableRegister.SP to WritableRegister.BP)
+    +callLocal("__fn_main")
+    +hlt()
+
+    val compiled = compileSource(sourceCode)
+    require(compiled.imports.isEmpty()) { "Single source cannot use external functions" }
+
+    addAll(compiled.asm)
+}.let {
+    link(null, assemble(AsmConfig(true, offset), it))
+}
+
+fun compileObj(sourceCode: String): ObjectFile {
+    val compiled = compileSource(sourceCode)
+    val conf = AsmConfig(
+        imports = compiled.imports,
+        exportLabels = compiled.exports.associateWith { "__fn_$it" }
+    )
+
+    return assemble(conf, compiled.asm)
 }

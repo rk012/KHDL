@@ -1,25 +1,44 @@
 package compiler.ast
 
-data class FunctionDeclaration(
-    val function: Function,
-    val body: Statement.Block
-) {
-    companion object : Parser<FunctionDeclaration> by parser({
-        val function = Function.parse()
-        val body = Statement.Block.parse()
+import compiler.tokens.Token
 
-        FunctionDeclaration(function, body)
-    })
+sealed interface GlobalElement {
+    data class ForwardDeclaration(
+        val function: Function
+    ) : GlobalElement {
+        companion object : Parser<ForwardDeclaration> by parser({
+            val fn = Function.parse()
+            match(Token.Symbol.Separator.SEMICOLON)
+            ForwardDeclaration(fn)
+        })
+    }
+
+    data class FunctionDefinition(
+        val function: Function,
+        val body: Statement.Block
+    ) : GlobalElement {
+        companion object : Parser<FunctionDefinition> by parser({
+            val function = Function.parse()
+            val body = Statement.Block.parse()
+
+            FunctionDefinition(function, body)
+        })
+    }
+
+    companion object : Parser<GlobalElement> by parseAny(
+        FunctionDefinition,
+        ForwardDeclaration
+    )
 }
 
 data class SourceNode(
-    val items: List<FunctionDeclaration>
+    val items: List<GlobalElement>
 ) {
     companion object : Parser<SourceNode> by parser({
-        val items = mutableListOf<FunctionDeclaration>()
+        val items = mutableListOf<GlobalElement>()
 
         while (peek() != null) {
-            items.add(FunctionDeclaration.parse())
+            items.add(GlobalElement.parse())
         }
 
         SourceNode(items)

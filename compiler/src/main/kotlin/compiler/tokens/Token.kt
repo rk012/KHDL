@@ -13,6 +13,7 @@ sealed interface Token {
             OPEN_BRACE("{"),
             CLOSE_BRACE("}"),
             SEMICOLON(";"),
+            COMMA(",")
         }
 
         enum class Operator(override val s: String) : Symbol {

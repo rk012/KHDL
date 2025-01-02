@@ -30,6 +30,27 @@ sealed interface Expression {
         })
     }
 
+    data class FunctionCall(val name: String, val args: List<Expression>) : Expression {
+        companion object : Parser<FunctionCall> by parser({
+            val name = match<Token.Identifier>().value
+            match(Token.Symbol.Separator.OPEN_PAREN)
+            val args = mutableListOf<Expression>()
+
+            if (peek() != Token.Symbol.Separator.CLOSE_PAREN) {
+                args.add(Expression.parse())
+
+                while (peek() != Token.Symbol.Separator.CLOSE_PAREN) {
+                    matchToken(Token.Symbol.Separator.COMMA)
+                    args.add(Expression.parse())
+                }
+            }
+
+            match(Token.Symbol.Separator.CLOSE_PAREN)
+
+            FunctionCall(name, args)
+        })
+    }
+
     sealed interface Unary : Expression {
         val operand: Expression
 
@@ -67,6 +88,7 @@ sealed interface Expression {
 
     companion object : Parser<Expression> {
         private val unaryExpr: Parser<Expression> by lazy { parseAny(
+            FunctionCall,
             parser {
                 match(Token.Symbol.Separator.OPEN_PAREN)
                 val expr = expr.parse()
@@ -299,15 +321,26 @@ sealed interface Expression {
 
 data class Function(
     val returnType: Type,
-    val name: String
+    val name: String,
+    val args: List<Pair<Type, String>>
 ) {
+    infix fun matchesSignature(other: Function): Boolean = returnType.wordSize == other.returnType.wordSize &&
+            args.unzip().first.map(Type::wordSize) == other.args.unzip().first.map(Type::wordSize)
+
     companion object : Parser<Function> by parser({
         val returnType = Type.parse()
         val name = match<Token.Identifier>().value
 
         match(Token.Symbol.Separator.OPEN_PAREN)
+
+        val args = mutableListOf<Pair<Type, String>>()
+
+        while (peek() != Token.Symbol.Separator.CLOSE_PAREN) {
+            args.add(Type.parse() to match<Token.Identifier>().value)
+        }
+
         match(Token.Symbol.Separator.CLOSE_PAREN)
 
-        Function(returnType, name)
+        Function(returnType, name, args)
     })
 }

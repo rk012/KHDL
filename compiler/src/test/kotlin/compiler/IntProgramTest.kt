@@ -1,14 +1,6 @@
 package compiler
 
 import VirtualMachine
-import assembler.AsmConfig
-import assembler.asm
-import assembler.assemble
-import assembler.instructions.callLocal
-import assembler.instructions.hlt
-import assembler.instructions.mov
-import assembler.instructions.set
-import assembler.link
 import common.WritableRegister
 import compiler.ast.SourceNode
 import compiler.tokens.Token
@@ -41,20 +33,7 @@ abstract class IntProgramTest(
 
     @Test
     fun executed() {
-        val compiled = compileSource(sourceCode)
-
-        val executable = asm {
-            +set(WritableRegister.SP, 0)
-            +mov(WritableRegister.SP to WritableRegister.BP)
-            +callLocal("__fn_main")
-            +hlt()
-
-            addAll(compiled)
-        }.let {
-            link(null, assemble(AsmConfig(), it))
-        }
-
-        val vm = VirtualMachine(executable.bytecode)
+        val vm = VirtualMachine(compileSingleSource(sourceCode).bytecode)
         vm.runUntilHalt()
         assertEquals(expectedReturn.toShort(), vm.debugRegister(WritableRegister.A))
     }

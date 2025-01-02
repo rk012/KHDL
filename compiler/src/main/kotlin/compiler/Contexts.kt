@@ -7,9 +7,13 @@ import assembler.instructions.*
 import common.AluOperation
 import common.JumpCondition
 import common.WritableRegister
+import compiler.ast.Type
 import kotlin.math.min
 
-class CompilerContext {
+class CompilerContext(
+    val imports: Set<String>,
+    val exports: Set<String>
+) {
     private val loadedFunctions = mutableSetOf<CompiledFunction>()
     var scope: LexicalScope? = null
         private set
@@ -76,6 +80,15 @@ class LexicalScope(val parent: LexicalScope? = null) {
         get() = size + (parent?.totalSize ?: 0)
 
     private fun getOffset(name: String): Int? = offsets[name] ?: parent?.getOffset(name)
+
+    fun loadArgs(args: List<Pair<Type, String>>) {
+        var curOffset = -2
+
+        args.forEach { (type, name) ->
+            offsets[name] = curOffset
+            curOffset -= type.wordSize
+        }
+    }
 
     context(AsmBuilderScope)
     fun newVar(name: String, varSize: Int) {
@@ -149,8 +162,21 @@ class RegisterStack {
     }
 
     context(AsmBuilderScope)
-    fun rrestore() {
-        (0..<min(4, rSize)).map { registers[(sp+4-it) % 4] }.forEach {
+    fun rrestore(argc: Int? = null) {
+        if (argc != null) {
+            rSize -= argc
+            rSize += 1
+
+            if (argc > 0) {
+                +set(WritableRegister.P, argc)
+                +aluP(WritableRegister.SP, WritableRegister.P, AluOperation.A_PLUS_B)
+                +mov(WritableRegister.P to WritableRegister.SP)
+            }
+
+            +mov(WritableRegister.A to r0)
+        }
+
+        ((if (argc == null) 0 else 1)..<min(4, rSize)).map { registers[(sp+4-it) % 4] }.forEach {
             +pop(it)
         }
     }

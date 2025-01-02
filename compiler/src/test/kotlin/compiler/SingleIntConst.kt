@@ -1,7 +1,6 @@
 package compiler
 
 import compiler.ast.*
-import compiler.ast.Function
 import compiler.tokens.Token
 
 class SingleIntConst : IntProgramTest(false) {
@@ -26,8 +25,8 @@ class SingleIntConst : IntProgramTest(false) {
     )
 
     override val expectedTree = SourceNode(listOf(
-        FunctionDeclaration(
-            Function(Type.Primitive.INT, "main"),
+        GlobalElement.FunctionDefinition(
+            Function(Type.Primitive.INT, "main", emptyList()),
             Statement.Block(listOf(
                 Statement.Return(Expression.Literal(Token.Literal.IntLiteral(5)))
             ))
