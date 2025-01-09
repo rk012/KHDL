@@ -44,6 +44,22 @@ private fun AsmBuilderScope.evalShift(shl: Boolean): Unit = with(requireNotNull(
 }
 
 context(CompilerContext)
+private fun AsmBuilderScope.evalBiBuiltin(fn: String): Unit = with(requireNotNull(scope).rStack) {
+    val name = "__builtin_$fn"
+
+    +mov(r0 to WritableRegister.P)
+    +mov(r1 to r0)
+    +mov(WritableRegister.P to r1)
+
+    rsave()
+
+    if (name in imports) +callExt(name)
+    else +callLocal("__fn_${name}")
+
+    rrestore(2)
+}
+
+context(CompilerContext)
 fun AsmBuilderScope.eval(expr: Expression): Unit = with(requireNotNull(scope)) {
     val oldSize = rStack.rSize
 
@@ -95,9 +111,11 @@ fun AsmBuilderScope.eval(expr: Expression): Unit = with(requireNotNull(scope)) {
                 is Expression.Binary.Add -> rStack.binOp(AluOperation.A_PLUS_B)
                 is Expression.Binary.Subtract -> rStack.binOp(AluOperation.A_MINUS_B)
 
-                is Expression.Binary.Divide -> TODO()
-                is Expression.Binary.Multiply -> TODO()
-                is Expression.Binary.Mod -> TODO()
+                // TODO Type analysis for determining correct mul/div/mod function
+
+                is Expression.Binary.Divide -> evalBiBuiltin("idiv")
+                is Expression.Binary.Multiply -> evalBiBuiltin("imul")
+                is Expression.Binary.Mod -> evalBiBuiltin("imod")
 
                 is Expression.Binary.BitwiseAnd -> rStack.binOp(AluOperation.AND)
                 is Expression.Binary.BitwiseOr -> rStack.binOp(AluOperation.OR)
@@ -404,7 +422,14 @@ data class CompiledSource(
 )
 
 fun compileSource(sourceCode: String): CompiledSource {
-    val ast = parseTokens(lexer(sourceCode))
+
+    val src = """
+        |${MultDiv.header}
+        |
+        |$sourceCode
+    """.trimMargin()
+
+    val ast = parseTokens(lexer(src))
     val ctx = scanTree(ast)
 
     with(ctx) {
@@ -429,7 +454,13 @@ fun compileSingleSource(sourceCode: String, offset: Int = 0) = asm {
     +callLocal("__fn_main")
     +hlt()
 
-    val compiled = compileSource(sourceCode)
+    val src = """
+        |$sourceCode
+        |
+        |${MultDiv.src}
+    """.trimMargin()
+
+    val compiled = compileSource(src)
     require(compiled.imports.isEmpty()) { "Single source cannot use external functions" }
 
     addAll(compiled.asm)

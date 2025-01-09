@@ -25,11 +25,6 @@ class CompilerContext(
         loadedFunctions.add(fn)
     }
 
-    fun AsmBuilderScope.callCompiled(fn: CompiledFunction) {
-        addCompiled(fn)
-        +callLocal(fn.name)
-    }
-
     fun compiledFunctions(): Assembly = asm {
         loadedFunctions.forEach { fn ->
             +fn.name
@@ -119,6 +114,7 @@ class LexicalScope(val parent: LexicalScope? = null) {
 
     context(AsmBuilderScope)
     fun dealloc() {
+        if (size == 0) return
         +set(WritableRegister.Q, size)
         +aluQ(WritableRegister.SP, WritableRegister.Q, AluOperation.A_PLUS_B)
         +mov(WritableRegister.Q to WritableRegister.SP)
@@ -164,8 +160,10 @@ class RegisterStack {
     context(AsmBuilderScope)
     fun rrestore(argc: Int? = null) {
         if (argc != null) {
-            rSize -= argc
-            rSize += 1
+            val d = 1 - argc
+
+            rSize += d
+            sp = (sp + if (d < 0) -3*d else d) % 4
 
             if (argc > 0) {
                 +set(WritableRegister.P, argc)

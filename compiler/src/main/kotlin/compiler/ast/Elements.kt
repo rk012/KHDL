@@ -40,7 +40,7 @@ sealed interface Expression {
                 args.add(Expression.parse())
 
                 while (peek() != Token.Symbol.Separator.CLOSE_PAREN) {
-                    matchToken(Token.Symbol.Separator.COMMA)
+                    match(Token.Symbol.Separator.COMMA)
                     args.add(Expression.parse())
                 }
             }
@@ -335,8 +335,12 @@ data class Function(
 
         val args = mutableListOf<Pair<Type, String>>()
 
-        while (peek() != Token.Symbol.Separator.CLOSE_PAREN) {
+        if (peek() != Token.Symbol.Separator.CLOSE_PAREN) {
             args.add(Type.parse() to match<Token.Identifier>().value)
+            while (peek() != Token.Symbol.Separator.CLOSE_PAREN) {
+                match(Token.Symbol.Separator.COMMA)
+                args.add(Type.parse() to match<Token.Identifier>().value)
+            }
         }
 
         match(Token.Symbol.Separator.CLOSE_PAREN)

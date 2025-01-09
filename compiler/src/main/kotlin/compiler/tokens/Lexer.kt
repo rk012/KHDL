@@ -14,8 +14,8 @@ fun lexer(src: String): List<Token> {
             when {
                 c.isWhitespace() -> null to unparsed.trim()
 
-                c.isLetter() -> {
-                    val word = unparsed.takeWhile { it.isLetter() }
+                c.isJavaIdentifierStart() -> {
+                    val word = c + unparsed.drop(1).takeWhile { it.isJavaIdentifierPart() }
                     val remaining = unparsed.drop(word.length)
 
                     Token.Keyword.entries.find { it.name.lowercase() == word }?.let { return@run it to remaining }

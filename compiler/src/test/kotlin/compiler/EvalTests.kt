@@ -8,6 +8,7 @@ import kotlin.test.assertEquals
 class EvalTests {
     private val cases = mapOf(
         "1 + 2" to 3,
+        "-5" to -5,
         "10 - 3" to 7,
         "5 << 1" to 10,
         "16 >> 2" to 4,
@@ -31,7 +32,18 @@ class EvalTests {
         "-1 && 0" to 0,
         "0 || 0" to 0,
         "1 && 0" to 0,
-        "0 ? 1+1 : 2+3" to 5
+        "0 ? 1+1 : 2+3" to 5,
+        "5*6" to 30,
+        "-2*-3" to 6,
+        "500*-40" to -20000,
+        "-8192*4" to -32768,
+        "10/3" to 3,
+        "30001/4" to 7500,
+        "3/-32768" to 0,
+        "-32768/-32768" to 1,
+        "-32768/4" to -8192,
+        "10%3" to 1,
+        "-10%3" to -1,
     )
 
     @Test
