@@ -2,16 +2,17 @@ package compiler
 
 class LocalFunctions : IntProgramTest() {
     override val sourceCode = """
-        int foo(int baz);
+        int fact(int n);
         
         int main() {
-            return foo(2) + 4;
+            return fact(5) + 4;
         }
         
-        int foo(int bar) {
-            return bar+bar;
+        int fact(int n) {
+            if (n > 0) return n * fact(n-1);
+            return 1;
         }
     """.trimIndent()
 
-    override val expectedReturn = 8
+    override val expectedReturn = 124
 }

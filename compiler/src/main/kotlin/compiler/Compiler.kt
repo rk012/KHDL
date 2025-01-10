@@ -339,7 +339,7 @@ fun AsmBuilderScope.compileBlock(block: Statement.Block) {
 
 context(CompilerContext)
 fun compileFunction(fn: GlobalElement.FunctionDefinition) = object : CompiledFunction {
-    override val name = "__fn_${fn.function.name}"
+    override val name = fn.function.name
 
     override val assembly = asm {
         newScope()
@@ -421,16 +421,17 @@ data class CompiledSource(
     val exports: List<String>
 )
 
-fun compileSource(sourceCode: String): CompiledSource {
-
+fun compileSource(sourceCode: String, precompiled: List<CompiledFunction>): CompiledSource {
     val src = """
-        |${MultDiv.header}
+        |${Builtin.header}
         |
         |$sourceCode
     """.trimMargin()
 
     val ast = parseTokens(lexer(src))
     val ctx = scanTree(ast)
+
+    precompiled.forEach { ctx.addCompiled(it) }
 
     with(ctx) {
         ast.items.forEach {
@@ -441,14 +442,16 @@ fun compileSource(sourceCode: String): CompiledSource {
         }
     }
 
+    val preDefs = precompiled.map { it.name }
+
     return CompiledSource(
         asm = ctx.compiledFunctions(),
-        imports = ctx.imports.toList(),
-        exports = ctx.exports.toList()
+        imports = (ctx.imports - preDefs.toSet()).toList(),
+        exports = precompiled.map { it.name } + ctx.exports.toList()
     )
 }
 
-fun compileSingleSource(sourceCode: String, offset: Int = 0) = asm {
+fun compileSingleSource(sourceCode: String, precompiled: List<CompiledFunction> = emptyList(), offset: Int = 0) = asm {
     +set(WritableRegister.SP, 0)
     +mov(WritableRegister.SP to WritableRegister.BP)
     +callLocal("__fn_main")
@@ -457,10 +460,10 @@ fun compileSingleSource(sourceCode: String, offset: Int = 0) = asm {
     val src = """
         |$sourceCode
         |
-        |${MultDiv.src}
+        |${Builtin.src}
     """.trimMargin()
 
-    val compiled = compileSource(src)
+    val compiled = compileSource(src, precompiled)
     require(compiled.imports.isEmpty()) { "Single source cannot use external functions" }
 
     addAll(compiled.asm)
@@ -468,12 +471,22 @@ fun compileSingleSource(sourceCode: String, offset: Int = 0) = asm {
     link(null, assemble(AsmConfig(true, offset), it))
 }
 
-fun compileObj(sourceCode: String): ObjectFile {
-    val compiled = compileSource(sourceCode)
+fun compileObj(sourceCode: String, precompiled: List<CompiledFunction> = emptyList()): ObjectFile {
+    val compiled = compileSource(sourceCode, precompiled)
     val conf = AsmConfig(
         imports = compiled.imports,
         exportLabels = compiled.exports.associateWith { "__fn_$it" }
     )
 
     return assemble(conf, compiled.asm)
+}
+
+fun compileExe(runtime: CRuntime?, vararg objs: ObjectFile): Executable {
+    if (runtime == null) return link(null, *objs)
+
+    val includes = objs.toMutableList()
+    includes.add(compileObj(Builtin.src))
+    includes.add(runtime.compiled())
+
+    return link(runtime.name, *includes.toTypedArray())
 }

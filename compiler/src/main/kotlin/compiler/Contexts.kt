@@ -27,7 +27,7 @@ class CompilerContext(
 
     fun compiledFunctions(): Assembly = asm {
         loadedFunctions.forEach { fn ->
-            +fn.name
+            +"__fn_${fn.name}"
             addAll(fn.assembly)
         }
     }

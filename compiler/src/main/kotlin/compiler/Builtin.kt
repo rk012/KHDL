@@ -1,9 +1,10 @@
 package compiler
 
-object MultDiv {
+object Builtin {
     val header = """
         int __builtin_imul(int a, int b);
         int __builtin_idiv(int x, int y);
+        int __builtin_imod(int x, int y);
     """.trimIndent()
 
     val src = """

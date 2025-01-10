@@ -53,9 +53,11 @@ fun link(entryPoint: String?, vararg objs: ObjectFile): Executable {
         0
     }
 
+    val startOffset = entryPointOffset + 2 // IP + 2 -> bytecode start
+
     val initInstructions = if (entryPointOffset != 0) listOf(
-        CpuInstruction.SET(true, WritableRegister.P, 0x00),
-        CpuInstruction.SET(false, WritableRegister.P, 2 + entryPointOffset),  // IP + 2 -> bytecode start
+        CpuInstruction.SET(true, WritableRegister.P, (startOffset shr 8) and 0xFF),
+        CpuInstruction.SET(false, WritableRegister.P, startOffset and 0xFF),
         CpuInstruction.MOV(ReadOnlyRegister.IP, WritableRegister.Q),
         CpuInstruction.ALU(false, WritableRegister.P, WritableRegister.Q, AluOperation.A_PLUS_B),  // <- IP
         CpuInstruction.CMP(true, JumpCondition(0b111), WritableRegister.P)

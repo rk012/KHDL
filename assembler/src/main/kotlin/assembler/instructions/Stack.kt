@@ -70,7 +70,9 @@ private fun enter(fn: String, isLocal: Boolean): AsmCommand {
     val retAddr = Any()
 
     return composeCommands(
-        push(getLabel(retAddr)),
+        localRef(retAddr),
+        mov(WritableRegister.P to WritableRegister.Q),
+        push(WritableRegister.Q),
         push(WritableRegister.BP),
         mov(WritableRegister.SP to WritableRegister.BP),
         if (isLocal) localRef(fn) else importedRef(fn),
